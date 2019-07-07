@@ -13,14 +13,10 @@ program main
 !---------------------------------------------------------------------!
     
     use constants
+    use parameters
+    use integrator
     
-    implicit none
-    
-    real(kind = DP) :: dt, time_limit, time_interval, temp1
-    real(kind = DP) :: temp2, gamma1, gamma2, lambda1, lambda2
-    
-    complex(kind = DP), dimension(4,4) :: rho0, HS, V1H, V2C
-    
+    implicit none    
     
     namelist/params/dt,time_limit,time_interval,temp1,temp2,gamma1,&
         & gamma2,lambda1,lambda2,V1H,V2C,HS,rho0
