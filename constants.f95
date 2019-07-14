@@ -8,7 +8,7 @@ module constants
 
     integer, parameter :: DP=selected_real_kind(15,307)
 
-    real(DP), parameter :: PI = 4*atan(1.)_DP
+    real(DP), parameter :: PI = 4*atan(1._DP)
 
     real(DP), parameter :: tol=1.0E-10
 
