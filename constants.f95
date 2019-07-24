@@ -16,5 +16,3 @@ module constants
     complex(kind=DP) :: REAL1=(1.0_DP,0.0_DP)
 
 end module constants
-
-

@@ -8,10 +8,10 @@ module parameters
     use constants
 
     implicit none
-    
-    real(kind = DP) :: dt, time_limit, time_interval, temp1
+
+    real(kind = DP) :: N, time_limit, time_interval, trunc, temp1
     real(kind = DP) :: temp2, gamma1, gamma2, lambda1, lambda2
-    
-    complex(kind = DP), dimension(4,4) :: rho0, HS, V1H, V2C
+
+    complex(kind = DP), dimension(4,4) :: rho0, HS, VS, V1H, V2C
 
 end module parameters
