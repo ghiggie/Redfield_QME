@@ -81,8 +81,9 @@ module helper
         end if
     end function BCH
 
-    complex function euler(x)
+    function euler(x)
         real(kind=DP), intent(in) :: x
+        complex(kind=DP) :: euler
 
         euler = REAL1*cos(x) + IMAG1*sin(x)
     end function euler
@@ -97,8 +98,9 @@ module helper
         dag = transpose(conjg(A))
     end function dag
 
-    complex function trace(A)
+    function trace(A)
         complex(kind=DP), dimension(:,:), intent(in) :: A
+        complex(kind=DP) :: trace
         complex(kind=DP) :: tr
         integer :: n
 
