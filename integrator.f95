@@ -21,6 +21,27 @@ module integrator
         op = BCH(IMAG1*t*HS,A,4)
     end function intop
 
+    complex function bath_corr(temp, gamma, lambda, t1, t2)
+        real(kind=DP), intent(in) :: temp, gamma, lambda, t1, t2
+        real(kind=DP) :: cotan, denom, tau
+        complex(kind=DP) :: c1, c2, c3, tmp
+
+        tau = t1 - t2 ! Note that t1 > t2
+        cotan = cos(0.5*gamma/temp)/sin(0.5*gamma/temp)
+        denom = (2*PI)**2 - (gamma/temp)**2
+
+        c1 = 2*lambda*gamma*(REAL1*cotan + (-1)*IMAG1)
+        c2 = 8*PI**lambda*gamma/denom
+        c3 = 4*lambda*temp/gamma - 2*lambda*cotan - (8*lambda*gamma/temp)/denom
+
+        if (tau .eq. 0) then
+            tmp = c1 + c2 + c3
+        else
+            tmp = c1*exp(-gamma*tau) + c2*exp(-2*PI*temp*tau)
+        end if
+        bath_corr = tmp
+    end function bath_corr
+
     function rk4_int(t, M, A)
         real(kind=DP), intent(in) :: t
         integer, intent(in) :: M

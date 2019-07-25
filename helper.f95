@@ -5,22 +5,6 @@ module helper
 
  contains
 
-    complex function bath_corr(temp, gamma)
-        real(kind=DP), intent(in) :: temp, gamma
-        real(kind=DP), dimension(2) :: gj, cj
-        real(kind=DP) :: cotan, delta
-
-        ! Matsubara frequency (n=1)
-        gj(1) = gamma
-        gj(2) = (2.0_DP*pi)*temp
-        cotan = cos(0.5_DP*gj(1)/temp)/sin(0.5*gj(1)/temp)
-        delta = 2.0_DP/(gj(1)/temp) - cotan - 4.0_DP*gj(1)*temp/(gj(2)**2-gj(1)**2)
-        cj(1) = gj(1) * cotan
-        cj(2) = 4.0_DP*gj(1)*temp * gj(2)/(gj(2)**2-gj(1)**2)
-
-        bath_corr = cj(1) * REAL1 + cj(2) * IMAG1
-    end function bath_corr
-
     function idm(n)
         integer, intent(in) :: n
         complex(kind=DP), dimension(n,n) :: id, idm
