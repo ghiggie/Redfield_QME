@@ -43,8 +43,8 @@ module integrator
         bath_corr = tmp
     end function bath_corr
 
-    function rk4_int(t, M, A)
-        real(kind=DP), intent(in) :: t
+    function rk4_int(t, M, A, temp, lambda, gamma)
+        real(kind=DP), intent(in) :: t, temp, lambda, gamma
         integer, intent(in) :: M
         complex(kind=DP), dimension(:,:), intent(in) :: A
         complex(kind=DP), dimension(:,:) :: rk4_int
@@ -60,10 +60,10 @@ module integrator
         dtj = t / M
         do j = 0, M - 1
             t_j = j * dtj
-            j1=intop(t,A)*dag(intop(t_j,A))*rho0-dag(intop(t_j,A))*rho0*intop(t,A)
-            j2=intop(t,A)*dag(intop(t_j+dtj/2,A))*rho0-dag(intop(t_j+dtj/2,A))*rho0*intop(t,A)
+            j1=(intop(t,A)*dag(intop(t_j,A))*rho0-dag(intop(t_j,A))*rho0*intop(t,A))*bath_corr(temp,gamma,lambda,t,t_j)
+            j2=(intop(t,A)*dag(intop(t_j+dtj/2,A))*rho0-dag(intop(t_j+dtj/2,A))*rho0*intop(t,A))*bath_corr(temp,gamma,lambda,t,t_j+dtj/2)
             j3 = j2 ! In this case, j2 and j3 happen to be the same
-            j4=intop(t,A)*dag(intop(t_j+dtj,A))*rho0-dag(intop(t_j+dtj,A))*rho0*intop(t,A)
+            j4=(intop(t,A)*dag(intop(t_j+dtj,A))*rho0-dag(intop(t_j+dtj,A))*rho0*intop(t,A))*bath_corr(temp,gamma,lambda,t,t_j+dtj)
             tmp = tmp + (dtj/6)*(j1+2*j2+2*j3+j4)
         end do
         rk4_int = tmp

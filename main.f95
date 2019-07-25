@@ -27,23 +27,18 @@ program main
 
     dti = time_limit / N
     do i = 0, N - 1
-        ! For now, it only calculates for hot bath. Further, it does not include
-        ! the bath correlation functions.
         t_i = i * dti
         ! Calculate k1
-        k1 = rk4_int(t_i,N,V1H)
+        k1 = rk4_int(t_i,N,V1H,temp1,lambda1,gamma1)+rk4_int(t_i,N,V2C,temp2,lambda2,gamma2)
         ! Calculate k2
-        k2 = rk4_int(t_i+dti/2,N,V1H)
+        k2 = rk4_int(t_i+dti/2,N,V1H,temp1,lambda1,gamma1)+rk4_int(t_i+dti/2,N,V2C,temp2,lambda2,gamma2)
         ! Calculate k3
         k3 = k2
         ! Calculate k4
-        k4 = rk4_int(t+dti,N,V1H)
+        k4 = rk4_int(t+dti,N,V1H,temp1,lambda1,gamma1)+rk4_int(t_i+dti,N,V2C,temp2,lambda2,gamma2)
         ! Calculate rho(i+1)
         rho(i+1) = rho(i) + (dti/6)*(k1+2*k2+2*k3+k4) + (dti/6)*dag((k1+2*k2+2*k3+k4),4)
         ! Need to store or print rho(i+1)
-        ! Need to be sure to include the result for the cold bath when we compute
-        ! this sum
-        ! Need to be sure to include the bath correlation functions
     end do
 
 
