@@ -24,7 +24,7 @@ program main
     real(kind=DP) :: dti, t_i
     character(len=40) :: filename, arg
 
-    namelist/params/N,time_limit,time_interval,temp1,temp2,gamma1,gamma2,lambda1,lambda2,V1H,V2C,HS,VS,rho0
+    namelist/params/N,time_limit,time_interval,trunc,temp1,temp2,gamma1,gamma2,lambda1,lambda2,rho0,HS,VS,V1H,V2C
 
     ! Get the name of the parameter file
     call getarg(1, arg)
@@ -34,7 +34,7 @@ program main
     read(10,nml=params)
     close(10)
 
-    k = size(HS, dim=1)
+    k = size(rho0, dim=1)
     allocate(rho(0:N,k,k)) !Sets up the storage for the data points
     rho(0,:,:) = rho0 ! Initialize the storage
 
