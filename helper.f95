@@ -113,4 +113,39 @@ module helper
         trace = tr
     end function trace
 
+    function test_hermitian(A)
+        complex(kind=DP), dimension(:,:), intent(in) :: A
+        logical :: test_hermitian
+        logical :: test
+        integer :: i, j, n
+
+        n = size(A, dim=1)
+        test = .true.
+        do i=1,n
+            if (abs(aimag(A(i,i))) > tol) then
+                test = .false.
+            end if
+            do j=i+1,n
+                if(abs(A(i,j)-conjg(A(j,i)))> tol) then
+                    test = .false.
+                end if
+            end do
+        end do
+        test_hermitian = test
+    end function test_hermitian
+
+    function test_trace(A)
+        complex(kind=DP), dimension(:,:), intent(in) :: A
+        logical :: test_trace
+        logical :: test
+        real(kind=DP) :: tr
+
+        test = .true.
+        tr = sqrt(trace(A)*conjg(trace(A)))
+        if (abs(tr-1) > tol) then
+            test = .false.
+        end if
+        test_trace = test
+    end function test_trace
+
 end module helper
