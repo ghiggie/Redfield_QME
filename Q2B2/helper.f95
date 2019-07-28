@@ -142,7 +142,7 @@ module helper
 
         test = .true.
         tr = sqrt(trace(A)*conjg(trace(A)))
-        if (abs(tr-1) > tol) then
+        if (abs(tr-1.0_DP) > tol) then
             test = .false.
         end if
         test_trace = test

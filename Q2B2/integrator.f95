@@ -18,7 +18,7 @@ module integrator
 
         n = size(A, dim=1)
         allocate(intop(n,n))
-        op = BCH(IMAG1*t*HS,A,4)
+        op = BCH(IMAG1*t*HS,A,trunc)
     end function intop
 
     function bath_corr(temp, gamma, lambda, t1, t2)

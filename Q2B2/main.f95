@@ -16,7 +16,6 @@ program main
     use parameters
     use integrator
     use helper
-
     implicit none
 
     complex(kind=DP), dimension(:,:) :: rho, k1, k2, k3, k4
@@ -50,14 +49,14 @@ program main
         ! Calculate k4
         k4 = rk4_int(t+dti,N,V1H,temp1,lambda1,gamma1)+rk4_int(t_i+dti,N,V2C,temp2,lambda2,gamma2)
         ! Calculate rho(i+1)
-        rho(i+1,:,:) = rho(i,:,:) + (dti/6)*(k1+2*k2+2*k3+k4) + (dti/6)*dag((k1+2*k2+2*k3+k4),4)
+        rho(i+1,:,:) = -rho(i,:,:) - (dti/6)*(k1+2*k2+2*k3+k4) - (dti/6)*dag((k1+2*k2+2*k3+k4),4)
     end do
 
     ! Write the density matrices to a file
     open(10,file='rho.dat')
     do i = 0, N
         t_i = i * dti
-        write(10,'(f10.3,32(e15.6e3))') time,((rho(i,j,k),j=1,4),k=1,4)
+        write(10,'(f10.3,32(e15.6e3))') t_i,((rho(i,j,k),j=1,4),k=1,4)
     end do
     close(10)
 
