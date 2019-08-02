@@ -8,19 +8,6 @@ module integrator
 
  contains
 
-    function intop(t, A)
-        ! Later, rewrite this so that it uses the eigensystem expansion to
-        ! compute the interaction picture operators.
-        real(kind=DP) :: t
-        complex(kind=DP), dimension(:,:), intent(in) :: A
-        complex(kind=DP), dimension(:,:) :: intop
-        integer :: n
-
-        n = size(A, dim=1)
-        allocate(intop(n,n))
-        op = BCH(IMAG1*t*HS,A,trunc)
-    end function intop
-
     function bath_corr(temp, gamma, lambda, t1, t2)
         real(kind=DP), intent(in) :: temp, gamma, lambda, t1, t2
         complex(kind=DP) :: bath_corr
@@ -46,24 +33,41 @@ module integrator
     function rk4_int(t, M, A, temp, lambda, gamma)
         real(kind=DP), intent(in) :: t, temp, lambda, gamma
         integer, intent(in) :: M
-        complex(kind=DP), dimension(:,:), intent(in) :: A
-        complex(kind=DP), dimension(:,:) :: rk4_int
-        complex(kind=DP), dimension(:,:) :: tmp, j1, j2, j3, j4
+        complex(kind=DP), dimension(:,:), allocatable, intent(in) :: A
+        complex(kind=DP), dimension(:,:), allocatable :: rk4_int
+        complex(kind=DP), dimension(:,:), allocatable :: tmp, j1, j2, j3, j4, op1, op2, op3, op4
         integer :: n, j
         real(kind=DP) :: dtj, t_j
+        complex(kind=DP) :: bc1, bc2, bc3
 
         n = size(A, dim=1)
         allocate(rk4_int(n,n))
         allocate(tmp(n,n))
+        allocate(j1(n,n))
+        allocate(j2(n,n))
+        allocate(j3(n,n))
+        allocate(j4(n,n))
+        allocate(op1(n,n))
+        allocate(op2(n,n))
+        allocate(op3(n,n))
+        allocate(op4(n,n))
+
+        op1 = intop(t*HS,A)
+        op2 = intop(t_j*HS,A)
+        op3 = intop((t_j + dtj/2)*HS,A)
+        op4 = intop((t_j+dtj)*HS,A)
+        bc1 = bath_corr(temp,gamma,lambda,t,t_j)
+        bc2 = bath_corr(temp,gamma,lambda,t,t_j+dtj/2)
+        bc3 = bath_corr(temp,gamma,lambda,t,t_j+dtj)
 
         tmp = 0
         dtj = t / M
         do j = 0, M - 1
             t_j = j * dtj
-            j1=(intop(t,A)*dag(intop(t_j,A))*rho0-dag(intop(t_j,A))*rho0*intop(t,A))*bath_corr(temp,gamma,lambda,t,t_j)
-            j2=(intop(t,A)*dag(intop(t_j+dtj/2,A))*rho0-dag(intop(t_j+dtj/2,A))*rho0*intop(t,A))*bath_corr(temp,gamma,lambda,t,t_j+dtj/2)
+            j1=(-matmul(matmul(op1,dag(op2)),rho0)+matmul(matmul(dag(op2),rho0),op1))*bc1
+            j2=(-matmul(matmul(op1,dag(op3)),rho0)+matmul(matmul(dag(op3),rho0),op1))*bc2
             j3 = j2 ! In this case, j2 and j3 happen to be the same
-            j4=(intop(t,A)*dag(intop(t_j+dtj,A))*rho0-dag(intop(t_j+dtj,A))*rho0*intop(t,A))*bath_corr(temp,gamma,lambda,t,t_j+dtj)
+            j4=(-matmul(matmul(op1,dag(op4)),rho0)+matmul(matmul(dag(op4),rho0),op1))*bc3
             tmp = tmp + (dtj/6)*(j1+2*j2+2*j3+j4)
         end do
         rk4_int = tmp
