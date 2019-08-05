@@ -30,14 +30,13 @@ module integrator
         bath_corr = tmp
     end function bath_corr
 
-    function rk4_int(t, M, A, temp, lambda, gamma)
-        real(kind=DP), intent(in) :: t, temp, lambda, gamma
-        integer, intent(in) :: M
+    function rk4_int(t, dt, A, temp, lambda, gamma)
+        real(kind=DP), intent(in) :: t, dt, temp, lambda, gamma
         complex(kind=DP), dimension(:,:), allocatable, intent(in) :: A
         complex(kind=DP), dimension(:,:), allocatable :: rk4_int
         complex(kind=DP), dimension(:,:), allocatable :: tmp, j1, j2, j3, j4, op1, op2, op3, op4
-        integer :: n, j
-        real(kind=DP) :: dtj, t_j
+        integer :: n, j, M
+        real(kind=DP) :: t_j
         complex(kind=DP) :: bc1, bc2, bc3
 
         n = size(A, dim=1)
@@ -53,22 +52,22 @@ module integrator
         allocate(op4(n,n))
 
         op1 = intop(t*HS,A)
-        op2 = intop(t_j*HS,A)
-        op3 = intop((t_j + dtj/2)*HS,A)
-        op4 = intop((t_j+dtj)*HS,A)
-        bc1 = bath_corr(temp,gamma,lambda,t,t_j)
-        bc2 = bath_corr(temp,gamma,lambda,t,t_j+dtj/2)
-        bc3 = bath_corr(temp,gamma,lambda,t,t_j+dtj)
 
         tmp = 0
-        dtj = t / M
+        M = int(t / dt)
         do j = 0, M - 1
-            t_j = j * dtj
+            t_j = j * dt
+            op2 = intop(t_j*HS,A)
+            op3 = intop((t_j + dt/2)*HS,A)
+            op4 = intop((t_j+dt)*HS,A)
+            bc1 = bath_corr(temp,gamma,lambda,t,t_j)
+            bc2 = bath_corr(temp,gamma,lambda,t,t_j+dt/2)
+            bc3 = bath_corr(temp,gamma,lambda,t,t_j+dt)
             j1=(-matmul(matmul(op1,dag(op2)),rho0)+matmul(matmul(dag(op2),rho0),op1))*bc1
             j2=(-matmul(matmul(op1,dag(op3)),rho0)+matmul(matmul(dag(op3),rho0),op1))*bc2
             j3 = j2 ! In this case, j2 and j3 happen to be the same
             j4=(-matmul(matmul(op1,dag(op4)),rho0)+matmul(matmul(dag(op4),rho0),op1))*bc3
-            tmp = tmp + (dtj/6)*(j1+2*j2+2*j3+j4)
+            tmp = tmp + (dt/6)*(j1+2*j2+2*j3+j4)
         end do
         rk4_int = tmp
     end function rk4_int
