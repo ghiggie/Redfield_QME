@@ -84,7 +84,7 @@ module helper
 
         ! Construct e^{iA}Be^{-iA}
         IntOp = matmul(tmp1, matmul(B, tmp2))
-    end function IntOp
+     end function IntOp
 
      function test_hermitian(A)
         complex(kind=DP), dimension(:,:), intent(in) :: A
@@ -106,6 +106,22 @@ module helper
         end do
         test_hermitian = test
      end function test_hermitian
+
+     function test_positivity(A)
+        complex(kind=DP), dimension(:,:), intent(in) :: A
+        logical :: test_positivity
+        complex(kind=DP), dimension(:,:), allocatable :: eigvect
+        real(kind=DP), dimension(:), allocatable :: eigval
+        integer :: i, n
+
+        n = size(A, dim=1)
+        call eigensystem(A, eigval, eigvect)
+        test_positivity = .true.
+
+        do i = 1, n
+            if (eigval(i) < 0.) test_positivity = .false.
+        end do
+     end function test_positivity
 
      function test_trace(A)
         complex(kind=DP), dimension(:,:), intent(in) :: A

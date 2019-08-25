@@ -30,9 +30,11 @@ module integrator
         bath_corr = tmp
     end function bath_corr
 
-    function rk4_int(t, dt, A, temp, lambda, gamma)
-        real(kind=DP), intent(in) :: t, dt, temp, lambda, gamma
+    function rk4_int(t1, t2, dt, A, rho, temp, lambda, gamma)
+        ! Compute \integral_{t_1}^{t_2}
+        real(kind=DP), intent(in) :: t1, t2, dt, temp, lambda, gamma
         complex(kind=DP), dimension(:,:), allocatable, intent(in) :: A
+        complex(kind=DP), dimension(:,:), intent(in) :: rho
         complex(kind=DP), dimension(:,:), allocatable :: rk4_int
         complex(kind=DP), dimension(:,:), allocatable :: tmp, j1, j2, j3, j4, op1, op2, op3, op4
         integer :: n, j, M
@@ -51,22 +53,22 @@ module integrator
         allocate(op3(n,n))
         allocate(op4(n,n))
 
-        op1 = intop(t*HS,A)
+        op1 = intop(t2*HS,A)
 
         tmp = 0
-        M = int(t / dt)
+        M = int((t2-t1) / dt)
         do j = 0, M - 1
-            t_j = j * dt
+            t_j = j * dt + t1
             op2 = intop(t_j*HS,A)
             op3 = intop((t_j + dt/2)*HS,A)
             op4 = intop((t_j+dt)*HS,A)
-            bc1 = bath_corr(temp,gamma,lambda,t,t_j)
-            bc2 = bath_corr(temp,gamma,lambda,t,t_j+dt/2)
-            bc3 = bath_corr(temp,gamma,lambda,t,t_j+dt)
-            j1=(-matmul(matmul(op1,dag(op2)),rho0)+matmul(matmul(dag(op2),rho0),op1))*bc1
-            j2=(-matmul(matmul(op1,dag(op3)),rho0)+matmul(matmul(dag(op3),rho0),op1))*bc2
+            bc1 = bath_corr(temp,gamma,lambda,t2,t_j)
+            bc2 = bath_corr(temp,gamma,lambda,t2,t_j+dt/2)
+            bc3 = bath_corr(temp,gamma,lambda,t2,t_j+dt)
+            j1=(-matmul(matmul(op1,dag(op2)),rho)+matmul(matmul(dag(op2),rho),op1))*bc1
+            j2=(-matmul(matmul(op1,dag(op3)),rho)+matmul(matmul(dag(op3),rho),op1))*bc2
             j3 = j2 ! In this case, j2 and j3 happen to be the same
-            j4=(-matmul(matmul(op1,dag(op4)),rho0)+matmul(matmul(dag(op4),rho0),op1))*bc3
+            j4=(-matmul(matmul(op1,dag(op4)),rho)+matmul(matmul(dag(op4),rho),op1))*bc3
             tmp = tmp + (dt/6)*(j1+2*j2+2*j3+j4)
         end do
         rk4_int = tmp
