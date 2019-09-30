@@ -42,7 +42,7 @@ module helper
      end subroutine eigensystem
 
      function ExpOp(A, B)
-        ! Computes the interaction picture operator
+        ! Computes
         !        e^{-iA}Be^{iA}
         ! using singular value decomposition.
 
@@ -65,13 +65,13 @@ module helper
 
         call eigensystem(A,eigval,eigvect)
 
-        ! Construct the diagonal matrices of e^{iA} and e^{-iA}
+        ! Construct the diagonal matrices of e^{-iA} and e^{iA}
         do i = 1, n
             diag1(i,i) = cmplx(cos(-eigval(i)), sin(-eigval(i)))
             diag2(i,i) = cmplx(cos(eigval(i)), sin(eigval(i)))
         end do
 
-        ! Construct e^{iA} and e^{-iA}
+        ! Construct e^{-iA} and e^{iA}
         tmp1 = matmul(eigvect, matmul(diag1, dag(eigvect)))
         tmp2 = matmul(eigvect, matmul(diag2, dag(eigvect)))
 
