@@ -5,6 +5,16 @@ module helper
 
  contains
 
+     function comm(A, B)
+         complex(kind=DP), dimension(:,:), intent(in) :: A, B
+         complex(kind=DP), dimension(:,:), allocatable :: comm
+         integer :: n
+
+         n = size(A, dim=1)
+         allocate(comm(n,n))
+         comm = matmul(A, B) - matmul(B, A)
+     end function comm
+
      function dag(A)
          complex(kind=DP), dimension(:,:), intent(in) :: A
          complex(kind=DP), dimension(:,:), allocatable :: dag
