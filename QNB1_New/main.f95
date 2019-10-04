@@ -75,7 +75,7 @@ program main
         k4 = -IMAG1*comm(HS, tmp1) - comm(VI, tmp3)
 
         rho(i+1,:,:) = rho(i,:,:) + (dt1 / 6) * (k1 + 2*k2 + 2*k3 + k4)
-        if (mod(ti+dt1,time_write).eq.0) write(10,'(f10.3,8(e15.6))') ti+dt1,((rho(i+1,j,k),j=1,S),k=1,S)
+        write(10,'(f10.3,8(e15.6))') ti+dt1,((rho(i+1,j,k),j=1,S),k=1,S)
     end do
 
     close(10)
@@ -84,7 +84,7 @@ program main
     do i = 0, N
         ti = i * dt1
         tmpl = test_hermitian(rho(i,:,:))
-        if (mod(ti,time_write).eq.0) write(10, '(f10.3,L2)') ti, tmpl
+        write(10, '(f10.3,L2)') ti, tmpl
     end do
     close(10)
 
@@ -92,7 +92,7 @@ program main
     do i = 0, N
         ti = i * dt1
         tmpl = test_trace(rho(i,:,:))
-        if (mod(ti,time_write).eq.0) write(10, '(f10.3,L2,2e15.6)') ti, tmpl, trace(rho(i,:,:))
+        write(10, '(f10.3,L2,2e15.6)') ti, tmpl, trace(rho(i,:,:))
     end do
     close(10)
 
@@ -100,14 +100,14 @@ program main
     do i = 0, N
         ti = i * dt1
         tmpl = test_positivity(rho(i,:,:))
-        if (mod(ti,time_write).eq.0) write(10, '(f10.3,L2)') ti, tmpl
+        write(10, '(f10.3,L2)') ti, tmpl
     end do
     close(10)
 
     open(10, file='entropy.dat')
     do i = 0, N
         ti = i * dt1
-        if (mod(ti,time_write).eq.0) write(10, '(f10.3,2(e15.6))') ti, Entropy(rho(i,:,:))
+        write(10, '(f10.3,2(e15.6))') ti, Entropy(rho(i,:,:))
     end do
     close(10)
 
