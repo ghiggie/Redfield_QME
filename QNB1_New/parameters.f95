@@ -8,7 +8,7 @@ module parameters
     use constants
     implicit none
 
-    real(kind = DP) :: dt1, dt2, time_limit, temp, gamma, lambda
+    real(kind = DP) :: dt1, dt2, time_limit, temp, gamma, lambda, time_write
 
     complex(kind = DP), dimension(:,:), allocatable :: rho0, HS, VI
 

@@ -51,6 +51,33 @@ module helper
          call ZHEEV('V','U',n,V,n,E,work,lwork,rwork,info)
      end subroutine eigensystem
 
+     function Entropy(A)
+         complex(kind=DP), dimension(:,:), intent(in) :: A
+         complex(kind=DP) :: Entropy
+         real(kind=DP), dimension(:), allocatable :: eigval
+         complex(kind=DP), dimension(:,:), allocatable :: eigvect, diag, tmp
+         integer :: i, n
+
+         n = size(A, dim=1)
+         allocate(eigval(n))
+         allocate(eigvect(n,n))
+         allocate(diag(n,n))
+         allocate(tmp(n,n))
+         call eigensystem(A, eigval, eigvect)
+
+         ! Construct ln A
+         do i = 1, n
+             diag(i,i) = log(eigval(i))
+         end do
+         tmp = matmul(eigvect, matmul(diag, dag(eigvect)))
+
+         ! Construct AlnA
+         tmp = matmul(A, tmp)
+
+         ! Compute trace
+         Entropy = -trace(tmp)
+     end function Entropy
+
      function ExpOp(A, B)
         ! Computes
         !        e^{-iA}Be^{iA}
