@@ -116,6 +116,38 @@ module helper
         ExpOp = matmul(tmp1, matmul(B, tmp2))
      end function ExpOp
 
+     ! Right now, this only works for a four dimensional Hilbert space
+     ! that we want to decompose into two two-dimensional Hilbert spaces.
+     function rhoA(A)
+         complex(kind=DP), dimension(:,:), intent(in) :: A
+         complex(kind=DP), dimension(2,2) :: rhoA
+         complex(kind=DP), dimension(4,2) :: b1, b2
+
+         b1 = 0
+         b2 = 0
+         b1(1,1) = 1
+         b1(3,2) = 1
+         b2(2,1) = 1
+         b2(4,2) = 1
+
+         rhoA = matmul(dag(b1),matmul(A,b1)) + matmul(dag(b2),matmul(A,b2))
+     end function rhoA
+
+     function rhoB(A)
+         complex(kind=DP), dimension(:,:), intent(in) :: A
+         complex(kind=DP), dimension(2,2) :: rhoB
+         complex(kind=DP), dimension(4,2) :: a1, a2
+
+         a1 = 0
+         a2 = 0
+         a1(1,1) = 1
+         a1(2,2) = 1
+         a2(3,1) = 1
+         a2(4,2) = 1
+
+         rhoB = matmul(dag(a1),matmul(A,a1)) + matmul(dag(a2),matmul(A,a2))
+     end function rhoB
+
      function test_hermitian(A)
         complex(kind=DP), dimension(:,:), intent(in) :: A
         logical :: test_hermitian

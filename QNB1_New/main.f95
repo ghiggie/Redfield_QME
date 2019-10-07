@@ -15,7 +15,7 @@ program main
     real(kind=DP) :: ti, tc
     logical :: tmpl
 
-    namelist/params/dt1,dt2,time_limit,temp,gamma,lambda,time_write,rho0,HS,VI
+    namelist/params/dt1,dt2,time_limit,temp,gamma,lambda,rho0,HS,VI
 
     ! Get the dimension of the system Hilbert space
     call getarg(1,arg)
