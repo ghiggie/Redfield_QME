@@ -12,7 +12,7 @@ module bath
         real(kind=DP), intent(in) :: temp, gamma, lambda, t1, t2
         complex(kind=DP) :: bc
         real(kind=DP) :: cotan, denom, tau
-        complex(kind=DP) :: c1, c2, c3, tmp
+        complex(kind=DP) :: c1, c2, tmp
 
         tau = t1 - t2 ! Note that t1 > t2
         cotan = cos(0.5*gamma/temp)/sin(0.5*gamma/temp)
@@ -20,13 +20,9 @@ module bath
 
         c1 = 2*lambda*gamma*(REAL1*cotan + (-1)*IMAG1)
         c2 = 8*PI*lambda*gamma/denom
-        c3 = 4*lambda*temp/gamma - 2*lambda*cotan - (8*lambda*gamma/temp)/denom
 
-        if (tau .eq. 0) then
-            tmp = c1 + c2 + c3
-        else
-            tmp = c1*exp(-gamma*tau) + c2*exp(-2*PI*temp*tau)
-        end if
+        tmp = c1*exp(-gamma*tau) + c2*exp(-2*PI*temp*tau)
+
         bc = tmp
     end function bc
 
@@ -35,7 +31,8 @@ module bath
         complex(kind=DP), dimension(:,:), intent(in) :: A, B
         complex(kind=DP), dimension(:,:), allocatable :: lambda_bc
         integer :: n, M, j
-        real(kind=DP) :: t2j, t2j1, t2j2
+        real(kind=DP) :: t2j, t2j1, t2j2, cotan, denom
+        complex(kind=DP) :: c3
         complex(kind=DP), dimension(:,:), allocatable :: tmp, tmp1, tmp2
         complex(kind=DP), dimension(:,:), allocatable :: f2j, f2j1, f2j2
 
@@ -47,6 +44,10 @@ module bath
         allocate(f2j(n,n))
         allocate(f2j1(n,n))
         allocate(f2j2(n,n))
+
+        cotan = cos(0.5*gamma/temp)/sin(0.5*gamma/temp)
+        denom = (2*PI)**2 - (gamma/temp)**2
+        c3 = 4*lambda*temp/gamma - 2*lambda*cotan - (8*lambda*gamma/temp)/denom
 
         tmp = 0
         M = int(t / dt)
@@ -69,7 +70,7 @@ module bath
 
             tmp = tmp + (dt / 3) * (f2j + 4*f2j1 + f2j2)
         end do
-        lambda_bc = tmp
+        lambda_bc = tmp + 0.5 * c3 * B
     end function lambda_bc
 
 end module bath
