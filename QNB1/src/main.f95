@@ -12,8 +12,7 @@ program main
     complex(kind=DP), dimension(:,:), allocatable :: tmp1, tmp2, tmp3
     character(len=40) :: filename, arg
     integer :: S, N, i, j, k
-    real(kind=DP) :: ti, tc
-    complex(kind=DP) :: tmp_val
+    real(kind=DP) :: ti, tc, tmp_val1, tmp_val2, tmp_val3
     logical :: tmpl
 
     namelist/params/dt1,dt2,time_limit,temp,gamma,lambda,rho0,HS,VI
@@ -93,7 +92,8 @@ program main
     do i = 0, N
         ti = i * dt1
         tmpl = test_trace(rho(i,:,:))
-        write(10, '(f10.3,L2,2e15.6)') ti, tmpl, trace(rho(i,:,:))
+        tmp_val1 = REAL(trace(rho(i,:,:)), kind=DP)
+        write(10, '(f10.3,L2,e15.6)') ti, tmpl, tmp_val1
     end do
     close(10)
 
@@ -108,23 +108,29 @@ program main
     open(10, file='entropy.dat')
     do i = 0, N
         ti = i * dt1
-        write(10, '(f10.3,2(e15.6))') ti, Entropy(rho(i,:,:))
+        tmp_val1 = REAL(Entropy(rho(i,:,:)), kind=DP)
+        write(10, '(f10.3,e15.6)') ti, tmp_val1
     end do
     close(10)
 
-    open(10, file='mean_E.dat')
+    open(10, file='stats_E.dat')
     do i = 0, N
         ti = i * dt1
-        tmp_val = trace(matmul(HS, rho(i,:,:)))
-        write(10, '(f10.3,2(e15.6))') ti, tmp_val
+        tmp_val1 = REAL(trace(matmul(HS, rho(i,:,:))), kind=DP)
+        tmp_val2 = REAL(trace(matmul(HS, matmul(HS, rho(i,:,:)))), kind=DP)
+        tmp_val3 = REAL(SQRT(tmp_val2 - tmp_val1**2), kind=DP)
+        write(10, '(f10.3,2(e15.6))') ti, tmp_val1, tmp_val3
     end do
     close(10)
 
-    open(10, file='mean_XS.dat')
+    open(10, file='stats_XS.dat')
     do i = 0, N
         ti = i * dt1
-        tmp_val = trace(matmul(VI, rho(i,:,:)))
-        write(10, '(f10.3,2(e15.6))') ti, tmp_val
+        tmp_val1 = REAL(trace(matmul(VI, rho(i,:,:))), kind=DP)
+        tmp_val2 = REAL(trace(matmul(VI, matmul(VI, rho(i,:,:)))), kind=DP)
+        tmp_val3 = REAL(SQRT(tmp_val2 - tmp_val1**2), kind=DP)
+        write(10, '(f10.3,2(e15.6))') ti, tmp_val1, tmp_val3
     end do
+    close(10)
 
 end program main
