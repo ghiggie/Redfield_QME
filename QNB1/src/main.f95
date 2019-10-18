@@ -13,6 +13,7 @@ program main
     character(len=40) :: filename, arg
     integer :: S, N, i, j, k
     real(kind=DP) :: ti, tc
+    complex(kind=DP) :: tmp_val
     logical :: tmpl
 
     namelist/params/dt1,dt2,time_limit,temp,gamma,lambda,rho0,HS,VI
@@ -110,5 +111,20 @@ program main
         write(10, '(f10.3,2(e15.6))') ti, Entropy(rho(i,:,:))
     end do
     close(10)
+
+    open(10, file='mean_E.dat')
+    do i = 0, N
+        ti = i * dt1
+        tmp_val = trace(matmul(HS, rho(i,:,:)))
+        write(10, '(f10.3,2(e15.6))') ti, tmp_val
+    end do
+    close(10)
+
+    open(10, file='mean_XS.dat')
+    do i = 0, N
+        ti = i * dt1
+        tmp_val = trace(matmul(VI, rho(i,:,:)))
+        write(10, '(f10.3,2(e15.6))') ti, tmp_val
+    end do
 
 end program main
