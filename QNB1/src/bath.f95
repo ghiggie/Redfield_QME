@@ -50,7 +50,11 @@ module bath
         c3 = 4*lambda*temp/gamma - 2*lambda*cotan - (8*lambda*gamma/temp)/denom
 
         tmp = 0
-        M = int(t / dt)
+        M = nint(t / dt)
+        if (mod(M,2) .ne. 0) then
+            M = M + 1
+            dt = t / M
+        if (mod(m,2) .ne. 0) STOP "Value of M is still not even; bath.f95, line 57"
         do j = 0, M/2 - 1
             t2j = 2*j * dt
             t2j1 = t2j + dt

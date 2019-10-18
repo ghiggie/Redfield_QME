@@ -40,7 +40,7 @@ program main
     read(10,nml=params)
     close(10)
 
-    N = int(time_limit / dt1)
+    N = nint(time_limit / dt1)
     allocate(rho(0:N,S,S)) !Sets up the storage for the data points
     rho(0,:,:) = rho0 ! Initialize the storage
 
