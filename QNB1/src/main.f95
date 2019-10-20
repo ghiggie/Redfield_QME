@@ -1,19 +1,11 @@
 program main
 
     use constants
-    use parameters
+    use variables
     use helper
     use bath
 
     implicit none
-
-    complex(kind=DP), dimension(:,:,:), allocatable :: rho
-    complex(kind=DP), dimension(:,:), allocatable :: k1, k2, k3, k4
-    complex(kind=DP), dimension(:,:), allocatable :: tmp1, tmp2, tmp3
-    character(len=40) :: filename, arg, hostname
-    integer :: S, N, i, j, k
-    real(kind=DP) :: ti, tc, tmp_val1, tmp_val2, tmp_val3
-    logical :: tmpl, halt
 
     namelist/params/dt1,dt2,time_limit,temp,gamma,lambda,rho0,HS,VI
     call get_environment_variable('HOSTNAME', hostname)
@@ -41,9 +33,9 @@ program main
                 write(*,*) '    -v: show the version number'
                 STOP ''
             case default
-                if (N .eq. 3) then
+                if (i .eq. 1) then
                     read(arg,*) S
-                else if (N .eq. 4) then
+                else if (i .eq. 2) then
                     filename = trim(arg)
                 else
                     write(*,*) ' Too many parameters'
@@ -74,7 +66,7 @@ program main
 
     ! Set up the summary file
     open(20, file = 'BornMarkov1B.out')
-    write(20, '3(a)') '*** Born Markov with One Bath (BornMarkov1B)', version, '***'
+    write(20, '(3a)') '*** Born Markov with One Bath (BornMarkov1B)', version, '***'
 
     write(20, '(/a,a)') 'Job begun at ', time_stamp()
     write(20, '(/a,a)') 'Host: ', trim(hostname)

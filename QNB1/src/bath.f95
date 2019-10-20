@@ -1,7 +1,7 @@
 module bath
 
     use constants
-    use parameters
+    use variables
     use helper
 
     implicit none
