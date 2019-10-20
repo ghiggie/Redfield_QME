@@ -199,6 +199,22 @@ module helper
         test_trace = test
      end function test_trace
 
+     function time_stamp()
+         !---------------------------------------
+         ! this returns current time in a string
+         !---------------------------------------
+         implicit none
+
+         character(18) :: time_stamp
+         character(8)  :: date
+         character(10) :: time
+
+         call date_and_time(date,time)
+
+         time_stamp = date(5:6) // '/' // date(7:8) // '/' //  date(1:4) &
+                              // '  ' // time(1:2) // ':' // time(3:4)
+      end function time_stamp
+
      function trace(A)
         complex(kind=DP), dimension(:,:), intent(in) :: A
         complex(kind=DP) :: trace

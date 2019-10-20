@@ -10,16 +10,48 @@ program main
     complex(kind=DP), dimension(:,:,:), allocatable :: rho
     complex(kind=DP), dimension(:,:), allocatable :: k1, k2, k3, k4
     complex(kind=DP), dimension(:,:), allocatable :: tmp1, tmp2, tmp3
-    character(len=40) :: filename, arg
+    character(len=40) :: filename, arg, hostname
     integer :: S, N, i, j, k
     real(kind=DP) :: ti, tc, tmp_val1, tmp_val2, tmp_val3
-    logical :: tmpl
+    logical :: tmpl, halt
 
     namelist/params/dt1,dt2,time_limit,temp,gamma,lambda,rho0,HS,VI
+    call get_environment_variable('HOSTNAME', hostname)
 
-    ! Get the dimension of the system Hilbert space
-    call getarg(1,arg)
-    read(arg,*) S
+    halt = .false.
+
+    N = iargc()
+    if (N .eq. 0) then
+        write(*,*) ' System size and configuration file are required.'
+        write(*,*) ' Usage: ./BornMarkov1B [-h] [-v] system_size config_file'
+    else
+        do i = 1, N
+            call getarg(i, arg)
+            select case(trim(arg))
+            case('-v')
+                write(*,*) "Born Markov with one bath: ", version
+                STOP ''
+            case('-h')
+                write(*,*) ' Usage: ./BornMarkov1B [-h] [-v] system_size config_file'
+                write(*,*) ' Required Parameters:'
+                write(*,*) '    system_size: size of the system Hilbert space'
+                write(*,*) '    config_file: parameter values in namelist format'
+                write(*,*) ' Optional Parameters:'
+                write(*,*) '    -h: show this usage information'
+                write(*,*) '    -v: show the version number'
+                STOP ''
+            case default
+                if (N .eq. 3) then
+                    read(arg,*) S
+                else if (N .eq. 4) then
+                    filename = trim(arg)
+                else
+                    write(*,*) ' Too many parameters'
+                    write(*,*) ' Usage: ./BornMarkov1B [-h] [-v] system_size config_file'
+                end if
+            end select
+        end do
+    end if
 
     allocate(rho0(S,S))
     allocate(HS(S,S))
@@ -32,10 +64,6 @@ program main
     allocate(tmp2(S,S))
     allocate(tmp3(S,S))
 
-    ! Get the name of the parameter file
-    call getarg(2, arg)
-    filename = trim(arg)
-
     open(10, file=trim(filename))
     read(10,nml=params)
     close(10)
@@ -43,6 +71,37 @@ program main
     N = nint(time_limit / dt1)
     allocate(rho(0:N,S,S)) !Sets up the storage for the data points
     rho(0,:,:) = rho0 ! Initialize the storage
+
+    ! Set up the summary file
+    open(20, file = 'BornMarkov1B.out')
+    write(20, '3(a)') '*** Born Markov with One Bath (BornMarkov1B)', version, '***'
+
+    write(20, '(/a,a)') 'Job begun at ', time_stamp()
+    write(20, '(/a,a)') 'Host: ', trim(hostname)
+
+    write(20,'(/a)') 'System Hamiltonian:'
+
+    tmpl = test_hermitian(HS)
+
+    if (tmpl) then
+        write(20,'(/a)') 'Self-Adjoint.'
+    else
+        halt = .true.
+        write(20,'(/a)') '**** NOT Self-Adjoint. ****'
+    end if
+
+    do i=1,S
+        write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(HS(i,j)),',',AIMAG(HS(i,j)),'),',j=1,S)
+    end do
+
+
+
+
+
+
+
+
+
 
     open(10,file='rho.dat')
     write(10,'(f10.3,8(e15.6))') 0.0,((rho(0,j,k),j=1,S),k=1,S)
@@ -132,5 +191,7 @@ program main
         write(10, '(f10.3,2(e15.6))') ti, tmp_val1, tmp_val3
     end do
     close(10)
+
+    close(20)
 
 end program main

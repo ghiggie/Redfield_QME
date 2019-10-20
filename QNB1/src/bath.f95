@@ -18,7 +18,7 @@ module bath
         cotan = cos(0.5*gamma/temp)/sin(0.5*gamma/temp)
         denom = (2*PI)**2 - (gamma/temp)**2
 
-        c1 = 2*lambda*gamma*(REAL1*cotan + (-1)*IMAG1)
+        c1 = lambda*gamma*(REAL1*cotan + (-1)*IMAG1)
         c2 = 8*PI*lambda*gamma/denom
 
         tmp = c1*exp(-gamma*tau) + c2*exp(-2*PI*temp*tau)
