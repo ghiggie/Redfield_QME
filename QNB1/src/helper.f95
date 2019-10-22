@@ -3,27 +3,26 @@ module helper
     use constants
     implicit none
 
+    ! Work area for zheev
+    integer, save :: info, lwork
+    real(kind=DP), dimension(6) :: rwork
+    complex(kind=DP), dimension(1000) :: work
+
  contains
 
-     function comm(A, B)
+     subroutine comm(A, B, C)
          complex(kind=DP), dimension(:,:), intent(in) :: A, B
-         complex(kind=DP), dimension(:,:), allocatable :: comm
-         integer :: n
+         complex(kind=DP), dimension(:,:), intent(out) :: C
 
-         n = size(A, dim=1)
-         allocate(comm(n,n))
-         comm = matmul(A, B) - matmul(B, A)
-     end function comm
+         C = matmul(A, B) - matmul(B, A)
+     end subroutine comm
 
-     function dag(A)
+     subroutine dag(A, Adag)
          complex(kind=DP), dimension(:,:), intent(in) :: A
-         complex(kind=DP), dimension(:,:), allocatable :: dag
-         integer :: n
+         complex(kind=DP), dimension(:,:), intent(out) :: Adag
 
-         n = size(A, dim=1)
-         allocate(dag(n,n))
-         dag = transpose(conjg(A))
-     end function dag
+         Adag = transpose(conjg(A))
+     end subroutine dag
 
      subroutine eigensystem(X,E,V)
          ! X is the matrix we want the eigensystem of
@@ -31,15 +30,11 @@ module helper
          ! V will store the eigenvectors
 
          complex(kind=DP), dimension(:,:), intent(in) :: X
-         real(kind=DP), dimension(:), allocatable, intent(out) :: E
-         complex(kind=DP), dimension(:,:), allocatable, intent(out) :: V
-
+         real(kind=DP), dimension(:), intent(out) :: E
+         complex(kind=DP), dimension(:,:), intent(out) :: V
          integer :: n
 
          n = size(X, dim=1)
-         allocate(E(n))
-         allocate(V(n,n))
-
          V = X
          lwork = -1
          call ZHEEV('V','U',n,V,n,E,work,lwork,rwork,info)
@@ -47,31 +42,16 @@ module helper
          call ZHEEV('V','U',n,V,n,E,work,lwork,rwork,info)
      end subroutine eigensystem
 
+     ! This entropy calculation will fail if any eigenvalues are 0
      function Entropy(A)
          complex(kind=DP), dimension(:,:), intent(in) :: A
-         complex(kind=DP) :: Entropy
-         real(kind=DP), dimension(:), allocatable :: eigval
-         complex(kind=DP), dimension(:,:), allocatable :: eigvect, diag, tmp
-         integer :: i, n
+         real(kind=DP) :: Entropy
+         real(kind=DP), dimension(:) :: eigval
+         complex(kind=DP), dimension(:,:) :: eigvect
 
-         n = size(A, dim=1)
-         allocate(eigval(n))
-         allocate(eigvect(n,n))
-         allocate(diag(n,n))
-         allocate(tmp(n,n))
          call eigensystem(A, eigval, eigvect)
 
-         ! Construct ln A
-         do i = 1, n
-             diag(i,i) = log(eigval(i))
-         end do
-         tmp = matmul(eigvect, matmul(diag, dag(eigvect)))
-
-         ! Construct AlnA
-         tmp = matmul(A, tmp)
-
-         ! Compute trace
-         Entropy = -trace(tmp)
+         Entropy = -SUM(eigval * LOG(eigval))
      end function Entropy
 
      function ExpOp(A, B)

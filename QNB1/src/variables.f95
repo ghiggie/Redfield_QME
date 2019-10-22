@@ -28,10 +28,4 @@ module variables
 
 
 
-
-    ! Work area for zheev
-    integer, save :: info, lwork
-    real(kind=DP), dimension(6) :: rwork
-    complex(kind=DP), dimension(1000) :: work
-
 end module variables
