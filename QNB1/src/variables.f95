@@ -13,7 +13,7 @@ module variables
     real(kind = DP) :: dt1, dt2, time_limit, temp, gamma, lambda
     complex(kind = DP), dimension(:,:), allocatable :: rho0, HS, VI
 
-    !!! Other variables needed by the program
+    !!! Variables needed by main.f95
 
     complex(kind=DP), dimension(:,:,:), allocatable :: rho
     complex(kind=DP), dimension(:,:), allocatable :: k1, k2, k3, k4
@@ -22,5 +22,16 @@ module variables
     integer :: S, N, i, j, k
     real(kind=DP) :: ti, tc, tmp_val1, tmp_val2, tmp_val3
     logical :: tmpl, halt
+
+
+
+
+
+
+
+    ! Work area for zheev
+    integer, save :: info, lwork
+    real(kind=DP), dimension(6) :: rwork
+    complex(kind=DP), dimension(1000) :: work
 
 end module variables

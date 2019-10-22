@@ -34,10 +34,6 @@ module helper
          real(kind=DP), dimension(:), allocatable, intent(out) :: E
          complex(kind=DP), dimension(:,:), allocatable, intent(out) :: V
 
-         integer, save :: info, lwork
-         real(kind=DP), dimension(6) :: rwork
-         complex(kind=DP), dimension(1000) :: work
-
          integer :: n
 
          n = size(X, dim=1)

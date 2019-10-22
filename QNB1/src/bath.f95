@@ -28,7 +28,7 @@ module bath
 
     function lambda_bc(A, B, temp, gamma, lambda, t, dt)
         real(kind=DP), intent(in) :: temp, gamma, lambda, t
-        real(kind=DP) :: dt
+        real(kind=DP) :: dt ! I allow for the possibility that this should be shifted
         complex(kind=DP), dimension(:,:), intent(in) :: A, B
         complex(kind=DP), dimension(:,:), allocatable :: lambda_bc
         integer :: n, M, j
