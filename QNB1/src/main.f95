@@ -45,23 +45,15 @@ program main
         end do
     end if
 
-    allocate(rho0(S,S))
-    allocate(HS(S,S))
-    allocate(VI(S,S))
-    allocate(k1(S,S))
-    allocate(k2(S,S))
-    allocate(k3(S,S))
-    allocate(k4(S,S))
-    allocate(tmp1(S,S))
-    allocate(tmp2(S,S))
-    allocate(tmp3(S,S))
-
     open(10, file=trim(filename))
     read(10,nml=params)
     close(10)
 
     N = nint(time_limit / dt1)
-    allocate(rho(0:N,S,S)) !Sets up the storage for the data points
+
+    ! Now that we have S and N, allocate all the arrays
+    call array_init()
+
     rho(0,:,:) = rho0 ! Initialize the storage
 
     ! Set up the summary file
@@ -73,9 +65,9 @@ program main
 
     write(20,'(/a)') 'System Hamiltonian:'
 
-    tmpl = test_hermitian(HS)
+    tmpl_1 = test_hermitian(HS)
 
-    if (tmpl) then
+    if (tmpl_1) then
         write(20,'(/a)') 'Self-Adjoint.'
     else
         halt = .true.
@@ -134,25 +126,25 @@ program main
     open(10, file='hermitian.dat')
     do i = 0, N
         ti = i * dt1
-        tmpl = test_hermitian(rho(i,:,:))
-        write(10, '(f10.3,L2)') ti, tmpl
+        tmpl_1 = test_hermitian(rho(i,:,:))
+        write(10, '(f10.3,L2)') ti, tmpl_1
     end do
     close(10)
 
     open(10, file='trace.dat')
     do i = 0, N
         ti = i * dt1
-        tmpl = test_trace(rho(i,:,:))
+        tmpl_1 = test_trace(rho(i,:,:))
         tmp_val1 = REAL(trace(rho(i,:,:)), kind=DP)
-        write(10, '(f10.3,L2,e15.6)') ti, tmpl, tmp_val1
+        write(10, '(f10.3,L2,e15.6)') ti, tmpl_1, tmp_val1
     end do
     close(10)
 
     open(10, file='positivity.dat')
     do i = 0, N
         ti = i * dt1
-        tmpl = test_positivity(rho(i,:,:))
-        write(10, '(f10.3,L2)') ti, tmpl
+        tmpl_1 = test_positivity(rho(i,:,:))
+        write(10, '(f10.3,L2)') ti, tmpl_1
     end do
     close(10)
 

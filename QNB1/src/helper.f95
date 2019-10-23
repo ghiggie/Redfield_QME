@@ -10,20 +10,6 @@ module helper
 
  contains
 
-     subroutine comm(A, B, C)
-         complex(kind=DP), dimension(:,:), intent(in) :: A, B
-         complex(kind=DP), dimension(:,:), intent(out) :: C
-
-         C = matmul(A, B) - matmul(B, A)
-     end subroutine comm
-
-     subroutine dag(A, Adag)
-         complex(kind=DP), dimension(:,:), intent(in) :: A
-         complex(kind=DP), dimension(:,:), intent(out) :: Adag
-
-         Adag = transpose(conjg(A))
-     end subroutine dag
-
      subroutine eigensystem(X,E,V)
          ! X is the matrix we want the eigensystem of
          ! E will store the eigenvalues
@@ -46,51 +32,38 @@ module helper
      function Entropy(A)
          complex(kind=DP), dimension(:,:), intent(in) :: A
          real(kind=DP) :: Entropy
-         real(kind=DP), dimension(:) :: eigval
-         complex(kind=DP), dimension(:,:) :: eigvect
 
          call eigensystem(A, eigval, eigvect)
 
          Entropy = -SUM(eigval * LOG(eigval))
      end function Entropy
 
-     function ExpOp(A, B)
+     ! This subroutine is better, but still needs to be improved. Come back later
+     subroutine I2S(A, B, C)
         ! Computes
         !        e^{-iA}Be^{iA}
         ! using singular value decomposition.
 
         complex(kind=DP), dimension(:,:), intent(in) :: A, B
-        complex(kind=DP), dimension(:,:), allocatable :: ExpOp
-        real(kind=DP), dimension(:), allocatable :: eigval
-        complex(kind=DP), dimension(:,:), allocatable :: eigvect
-        complex(kind=DP), dimension(:,:), allocatable :: diag1, diag2, tmp1, tmp2
-        integer :: i, n
+        complex(kind=DP), dimension(:,:), intent(out) :: C
+        integer :: i
 
-        n = size(A, dim=1)
-        allocate(ExpOp(n,n))
-        allocate(diag1(n,n))
-        allocate(diag2(n,n))
-        allocate(tmp1(n,n))
-        allocate(tmp2(n,n))
-
-        diag1 = 0
-        diag2 = 0
+        diag = 0
 
         call eigensystem(A,eigval,eigvect)
 
-        ! Construct the diagonal matrices of e^{-iA} and e^{iA}
-        do i = 1, n
-            diag1(i,i) = cmplx(cos(-eigval(i)), sin(-eigval(i)))
-            diag2(i,i) = cmplx(cos(eigval(i)), sin(eigval(i)))
+        ! Construct the diagonal matrix of e^{-iA}
+        ! Remember that S is a global variable for the dimension of the system
+        do i = 1, S
+            diag(i,i) = cmplx(cos(-eigval(i)), sin(-eigval(i)))
         end do
 
-        ! Construct e^{-iA} and e^{iA}
-        tmp1 = matmul(eigvect, matmul(diag1, dag(eigvect)))
-        tmp2 = matmul(eigvect, matmul(diag2, dag(eigvect)))
+        ! Construct e^{-iA}
+        tmp_arr = matmul(eigvect, matmul(diag, transpose(conjg(eigvect))))
 
         ! Construct e^{-iA}Be^{iA}
-        ExpOp = matmul(tmp1, matmul(B, tmp2))
-     end function ExpOp
+        C = matmul(tmp_arr, matmul(B, transpose(conjg(tmp_arr))))
+    end subroutine I2S
 
      ! Right now, this only works for a four dimensional Hilbert space
      ! that we want to decompose into two two-dimensional Hilbert spaces.
