@@ -6,48 +6,62 @@ module bath
 
     implicit none
 
+    real(kind=DP) :: denom
+    complex(kind=DP) :: c1, c2, c3
+
+    denom = (2*PI)**2 - (gamma/temp)**2
+
+    c2 = 8*PI*lambda*gamma/denom
+
  contains
 
-    function bc(temp, gamma, lambda, t1, t2)
-        real(kind=DP), intent(in) :: temp, gamma, lambda, t1, t2
-        complex(kind=DP) :: bc
-        real(kind=DP) :: cotan, denom, tau
-        complex(kind=DP) :: c1, c2, tmp
+    subroutine bc_coeff()
 
-        tau = t1 - t2 ! Note that t1 > t2
+        ! This subroutine will operate on a vector with K+2 entries, where
+        ! K is the number of Matsubara terms. The vector will look like
+        !    coeff(0:K+1)
+
+        real(kind=DP) :: cotan
         cotan = cos(0.5*gamma/temp)/sin(0.5*gamma/temp)
-        denom = (2*PI)**2 - (gamma/temp)**2
 
-        c1 = lambda*gamma*(REAL1*cotan + (-1)*IMAG1)
-        c2 = 8*PI*lambda*gamma/denom
+        coeff(0) = lambda*gamma*CMPLX(cotan,-1)
+
+        do i = 1, K
+            nu = 2 * PI * temp * i
+            coeff(i) = 4*lambda*gamma*temp*nu/(nu**2 - gamma**2)
+        end do
+
+        tmp_r = 0
+        do i = 1, K
+            nu = 2 * PI * temp * i
+            tmp_r = tmp_r + 1 / (nu**2 - gamma**2)
+        end do
+        tmp_r = 8*lambda*gamma*temp*tmp_r
+        coeff(K+1) = 4*lambda*temp/gamma - 2*lambda*cotan - tmp_r
+    end subroutine bc_coeff
+
+    function bc(tau)
+        real(kind=DP), intent(in) ::  tau
+        complex(kind=DP) :: bc
+        complex(kind=DP) :: tmp
 
         tmp = c1*exp(-gamma*tau) + c2*exp(-2*PI*temp*tau)
 
         bc = tmp
     end function bc
 
-    function lambda_bc(A, B, temp, gamma, lambda, t, dt)
-        real(kind=DP), intent(in) :: temp, gamma, lambda, t
+    function lambda_bc(A, B, t, dt)
+        real(kind=DP), intent(in) :: t
         real(kind=DP) :: dt ! I allow for the possibility that this should be shifted
         complex(kind=DP), dimension(:,:), intent(in) :: A, B
         complex(kind=DP), dimension(:,:), allocatable :: lambda_bc
-        integer :: n, M, j
-        real(kind=DP) :: t2j, t2j1, t2j2, cotan, denom
-        complex(kind=DP) :: c3
+        integer :: M, j
+        real(kind=DP) :: t2j, t2j1, t2j2
         complex(kind=DP), dimension(:,:), allocatable :: tmp, tmp1, tmp2
         complex(kind=DP), dimension(:,:), allocatable :: f2j, f2j1, f2j2
 
-        n = size(A, dim=1)
-        allocate(lambda_bc(n,n))
-        allocate(tmp(n,n))
-        allocate(tmp1(n,n))
-        allocate(tmp2(n,n))
-        allocate(f2j(n,n))
-        allocate(f2j1(n,n))
-        allocate(f2j2(n,n))
+        allocate(lambda_bc(S,S))
 
-        cotan = cos(0.5*gamma/temp)/sin(0.5*gamma/temp)
-        denom = (2*PI)**2 - (gamma/temp)**2
         c3 = 4*lambda*temp/gamma - 2*lambda*cotan - (8*lambda*gamma/temp)/denom
 
         tmp = 0
@@ -63,15 +77,15 @@ module bath
             t2j2 = t2j1 + dt
 
             tmp1 = (t - t2j) * A
-            tmp2 = ExpOp(tmp1, B)
+            tmp2 = I2S(tmp1, B)
             f2j = bc(temp, gamma, lambda, t, t2j) * tmp2
 
             tmp1 = (t - t2j1) * A
-            tmp2 = ExpOp(tmp1, B)
+            tmp2 = I2S(tmp1, B)
             f2j1 = bc(temp, gamma, lambda, t, t2j1) * tmp2
 
             tmp1 = (t - t2j2) * A
-            tmp2 = ExpOp(tmp1, B)
+            tmp2 = I2S(tmp1, B)
             f2j2 = bc(temp, gamma, lambda, t, t2j2) * tmp2
 
             tmp = tmp + (dt / 3) * (f2j + 4*f2j1 + f2j2)

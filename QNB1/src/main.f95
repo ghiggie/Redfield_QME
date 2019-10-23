@@ -97,25 +97,25 @@ program main
         tmp1 = rho(i,:,:)
         tmp2 = lambda_bc(HS, VI, temp, gamma, lambda, tc, dt2)
         tmp3 = matmul(tmp2, tmp1) - matmul(tmp1, dag(tmp2))
-        k1 = -IMAG1*comm(HS, tmp1) - comm(VI, tmp3)
+        k1 = -CMPLX(0,1)*comm(HS, tmp1) - comm(VI, tmp3)
 
         tc = ti + dt1 / 2
         tmp1 = rho(i,:,:) + k1 * dt1 / 2
         tmp2 = lambda_bc(HS, VI, temp, gamma, lambda, tc, dt2)
         tmp3 = matmul(tmp2, tmp1) - matmul(tmp1, dag(tmp2))
-        k2 = -IMAG1*comm(HS, tmp1) - comm(VI, tmp3)
+        k2 = -CMPLX(0,1)*comm(HS, tmp1) - comm(VI, tmp3)
 
         tc = ti + dt1 / 2
         tmp1 = rho(i,:,:) + k2 * dt1 / 2
         tmp2 = lambda_bc(HS, VI, temp, gamma, lambda, tc, dt2)
         tmp3 = matmul(tmp2, tmp1) - matmul(tmp1, dag(tmp2))
-        k3 = -IMAG1*comm(HS, tmp1) - comm(VI, tmp3)
+        k3 = -CMPLX(0,1)*comm(HS, tmp1) - comm(VI, tmp3)
 
         tc = ti + dt1
         tmp1 = rho(i,:,:) + k3 * dt1
         tmp2 = lambda_bc(HS, VI, temp, gamma, lambda, tc, dt2)
         tmp3 = matmul(tmp2, tmp1) - matmul(tmp1, dag(tmp2))
-        k4 = -IMAG1*comm(HS, tmp1) - comm(VI, tmp3)
+        k4 = -CMPLX(0,1)*comm(HS, tmp1) - comm(VI, tmp3)
 
         rho(i+1,:,:) = rho(i,:,:) + (dt1 / 6) * (k1 + 2*k2 + 2*k3 + k4)
         write(10,'(f10.3,8(e15.6))') ti+dt1,((rho(i+1,j,k),j=1,S),k=1,S)

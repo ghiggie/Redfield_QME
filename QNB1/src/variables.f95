@@ -51,6 +51,13 @@ contains
         allocate(diag(S,S))
         allocate(tmp_arr(S,S))
 
+        allocate(tmp(S,S))
+        allocate(tmp1(S,S))
+        allocate(tmp2(S,S))
+        allocate(f2j(S,S))
+        allocate(f2j1(S,S))
+        allocate(f2j2(S,S))
+
 
 
 
