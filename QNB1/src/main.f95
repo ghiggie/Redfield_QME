@@ -7,21 +7,23 @@ program main
 
     implicit none
 
-    namelist/params/dt1,dt2,time_limit,temp,gamma,lambda,rho0,HS,VI
+    namelist/params/dt1,dt2,time_limit,matsu,temp,gamma,lambda,rho0,HS,VI
     call get_environment_variable('HOSTNAME', hostname)
 
     halt = .false.
 
-    N = iargc()
-    if (N .eq. 0) then
+    n_arg = iargc()
+    if (n_arg .eq. 0) then
         write(*,*) ' System size and configuration file are required.'
         write(*,*) ' Usage: ./BornMarkov1B [-h] [-v] system_size config_file'
     else
-        do i = 1, N
+        do i = 1, n_arg
             call getarg(i, arg)
             select case(trim(arg))
             case('-v')
-                write(*,*) "Born Markov with one bath: ", version
+                write(*,*) 'Coded by ', trim(coded_by)
+                write(*,*) 'Last Updated: ', trim(last_update)
+                write(*,*) 'Born Markov with one bath: ', trim(version)
                 STOP ''
             case('-h')
                 write(*,*) ' Usage: ./BornMarkov1B [-h] [-v] system_size config_file'
@@ -34,7 +36,7 @@ program main
                 STOP ''
             case default
                 if (i .eq. 1) then
-                    read(arg,*) S
+                    read(arg,*) ss
                 else if (i .eq. 2) then
                     filename = trim(arg)
                 else
@@ -51,8 +53,9 @@ program main
 
     N = nint(time_limit / dt1)
 
-    ! Now that we have S and N, allocate all the arrays
+    ! Now that we have ss and N, allocate all the arrays
     call array_init()
+    call bc_coeff()
 
     rho(0,:,:) = rho0 ! Initialize the storage
 
@@ -74,8 +77,8 @@ program main
         write(20,'(/a)') '**** NOT Self-Adjoint. ****'
     end if
 
-    do i=1,S
-        write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(HS(i,j)),',',AIMAG(HS(i,j)),'),',j=1,S)
+    do i=1,ss
+        write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(HS(i,j)),',',AIMAG(HS(i,j)),'),',j=1,ss)
     end do
 
 
@@ -88,7 +91,7 @@ program main
 
 
     open(10,file='rho.dat')
-    write(10,'(f10.3,8(e15.6))') 0.0,((rho(0,j,k),j=1,S),k=1,S)
+    write(10,'(f10.3,8(e15.6))') 0.0,((rho(0,j,k),j=1,ss),k=1,ss)
 
     do i = 0, N - 1
         ti = i * dt1
@@ -118,7 +121,7 @@ program main
         k4 = -CMPLX(0,1)*comm(HS, tmp1) - comm(VI, tmp3)
 
         rho(i+1,:,:) = rho(i,:,:) + (dt1 / 6) * (k1 + 2*k2 + 2*k3 + k4)
-        write(10,'(f10.3,8(e15.6))') ti+dt1,((rho(i+1,j,k),j=1,S),k=1,S)
+        write(10,'(f10.3,8(e15.6))') ti+dt1,((rho(i+1,j,k),j=1,ss),k=1,ss)
     end do
 
     close(10)

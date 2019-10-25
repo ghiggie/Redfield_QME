@@ -10,7 +10,8 @@ module variables
 
     !!! User Parameters set in params.cfg
 
-    real(kind = DP) :: dt1, dt2, time_limit, temp, gamma, lambda
+    real(kind = DP) :: dt, time_limit, temp, gamma, lambda
+    integer :: matsu
     complex(kind = DP), dimension(:,:), allocatable :: rho0, HS, VI
 
     !!! Variables needed by main.f95
@@ -19,12 +20,12 @@ module variables
     complex(kind=DP), dimension(:,:), allocatable :: k1, k2, k3, k4
     complex(kind=DP), dimension(:,:), allocatable :: tmp1, tmp2, tmp3
     character(len=40) :: filename, arg, hostname
-    integer :: S, N, i, j, k
+    integer :: ss, N, i, j, k
     real(kind=DP) :: ti, tc, tmp_val1, tmp_val2, tmp_val3
     logical :: tmpl_1, halt
 
 
-    real(kind=DP), dimension(:), allocatable :: eigval
+    real(kind=DP), dimension(:), allocatable :: eigval, coeff
     complex(kind=DP), dimension(:,:), allocatable :: eigvect, diag, tmp_arr
 
 
@@ -33,30 +34,32 @@ contains
 
     subroutine array_init()
 
-        allocate(rho0(S,S))
-        allocate(HS(S,S))
-        allocate(VI(S,S))
-        allocate(k1(S,S))
-        allocate(k2(S,S))
-        allocate(k3(S,S))
-        allocate(k4(S,S))
-        allocate(tmp1(S,S))
-        allocate(tmp2(S,S))
-        allocate(tmp3(S,S))
+        allocate(rho0(ss,ss))
+        allocate(HS(ss,ss))
+        allocate(VI(ss,ss))
+        allocate(k1(ss,ss))
+        allocate(k2(ss,ss))
+        allocate(k3(ss,ss))
+        allocate(k4(ss,ss))
+        allocate(tmp1(ss,ss))
+        allocate(tmp2(ss,ss))
+        allocate(tmp3(ss,ss))
 
-        allocate(rho0(0:N,S,S))
+        allocate(rho0(0:N,ss,ss))
 
-        allocate(eigval(S))
-        allocate(eigvect(S,S))
-        allocate(diag(S,S))
-        allocate(tmp_arr(S,S))
+        allocate(eigval(ss))
+        allocate(eigvect(ss,ss))
+        allocate(diag(ss,ss))
+        allocate(tmp_arr(ss,ss))
 
-        allocate(tmp(S,S))
-        allocate(tmp1(S,S))
-        allocate(tmp2(S,S))
-        allocate(f2j(S,S))
-        allocate(f2j1(S,S))
-        allocate(f2j2(S,S))
+        allocate(tmp(ss,ss))
+        allocate(tmp1(ss,ss))
+        allocate(tmp2(ss,ss))
+        allocate(f2j(ss,ss))
+        allocate(f2j1(ss,ss))
+        allocate(f2j2(ss,ss))
+
+        allocate(coeff(0:matsu))
 
 
 

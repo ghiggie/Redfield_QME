@@ -53,8 +53,8 @@ module helper
         call eigensystem(A,eigval,eigvect)
 
         ! Construct the diagonal matrix of e^{-iA}
-        ! Remember that S is a global variable for the dimension of the system
-        do i = 1, S
+        ! Remember that ss is a global variable for the dimension of the system
+        do i = 1, ss
             diag(i,i) = cmplx(cos(-eigval(i)), sin(-eigval(i)))
         end do
 
