@@ -6,10 +6,7 @@ module bath
 
     implicit none
 
-    real(kind=DP) :: denom
     complex(kind=DP) :: c1, c2, c3
-
-    denom = (2*PI)**2 - (gamma/temp)**2
 
     c2 = 8*PI*lambda*gamma/denom
 
@@ -17,9 +14,11 @@ module bath
 
     subroutine bc_coeff()
 
-        ! This subroutine will operate on a vector with K+2 entries, where
+        ! This subroutine will operate on a vector with K+1 entries, where
         ! K is the number of Matsubara terms. The vector will look like
-        !    coeff(0:K+1)
+        !    coeff(0:K)
+        ! The coefficient for the delta term will be contained in cinf. coeff(0)
+        ! will correspond to the coefficient of the exponential gamma term.
 
         real(kind=DP) :: cotan
         cotan = cos(0.5*gamma/temp)/sin(0.5*gamma/temp)
@@ -37,7 +36,7 @@ module bath
             tmp_r = tmp_r + 1 / (nu**2 - gamma**2)
         end do
         tmp_r = 8*lambda*gamma*temp*tmp_r
-        coeff(K+1) = 4*lambda*temp/gamma - 2*lambda*cotan - tmp_r
+        cinf = 4*lambda*temp/gamma - 2*lambda*cotan - tmp_r
     end subroutine bc_coeff
 
     function bc(tau)
