@@ -79,7 +79,7 @@ module helper
          b2(2,1) = 1
          b2(4,2) = 1
 
-         rhoA = matmul(dag(b1),matmul(A,b1)) + matmul(dag(b2),matmul(A,b2))
+         rhoA = matmul(transpose(conjg(b1),matmul(A,b1)) + matmul(transpose(conjg(b2),matmul(A,b2))
      end function rhoA
 
      function rhoB(A)
@@ -94,7 +94,7 @@ module helper
          a2(3,1) = 1
          a2(4,2) = 1
 
-         rhoB = matmul(dag(a1),matmul(A,a1)) + matmul(dag(a2),matmul(A,a2))
+         rhoB = matmul(transpose(conjg(a1),matmul(A,a1)) + matmul(transpose(conjg(a2),matmul(A,a2))
      end function rhoB
 
      function test_hermitian(A)
