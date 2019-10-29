@@ -1,6 +1,7 @@
 module helper
 
     use constants
+    use variables
     implicit none
 
     ! Work area for zheev
@@ -57,10 +58,10 @@ module helper
         end do
 
         ! Construct e^{-iA}
-        tmp_arr = matmul(eigvect, matmul(diag, transpose(conjg(eigvect))))
+        tmp_arr1 = matmul(eigvect, matmul(diag, transpose(conjg(eigvect))))
 
         ! Construct e^{-iA}Be^{iA}
-        C = matmul(tmp_arr, matmul(B, transpose(conjg(tmp_arr))))
+        C = matmul(tmp_arr1, matmul(B, transpose(conjg(tmp_arr1))))
     end subroutine I2S
 
      ! Right now, this only works for a four dimensional Hilbert space
@@ -69,14 +70,14 @@ module helper
          complex(kind=DP), dimension(:,:), intent(in) :: A
          complex(kind=DP), dimension(2,2), intent(out) :: B
 
-         B = matmul(transpose(conjg(b1),matmul(A,b1))) + matmul(transpose(conjg(b2),matmul(A,b2)))
+         B = matmul(transpose(conjg(b1)),matmul(A,b1)) + matmul(transpose(conjg(b2)),matmul(A,b2))
      end subroutine rhoA
 
      subroutine rhoB(A, B)
          complex(kind=DP), dimension(:,:), intent(in) :: A
          complex(kind=DP), dimension(2,2), intent(out) :: B
 
-         B = matmul(transpose(conjg(a1),matmul(A,a1))) + matmul(transpose(conjg(a2),matmul(A,a2)))
+         B = matmul(transpose(conjg(a1)),matmul(A,a1)) + matmul(transpose(conjg(a2)),matmul(A,a2))
      end subroutine rhoB
 
      function test_hermitian(A)

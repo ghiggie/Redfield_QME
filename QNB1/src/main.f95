@@ -9,7 +9,7 @@ program main
 
     character(len=40) :: filename, arg, hostname
     complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI
-    integer :: n_arg, i
+    integer :: n_arg, i, j, k
     logical :: tmp_l1
     real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3
 
@@ -60,7 +60,7 @@ program main
     n_steps = nint(time_limit / dt)
 
     ! Initialize the multi time-step arrays
-    allocate(rho0(0:n_steps,ss,ss))
+    allocate(rho(0:n_steps,ss,ss))
     rho(0,:,:) = rho0 ! Initialize the storage
     allocate(bath_VI(0:n_steps,ss,ss))
     ! Create the arrays needed for the bath correlation calculation

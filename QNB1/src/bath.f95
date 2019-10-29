@@ -25,7 +25,7 @@ module bath
             coeff(0) = lambda*gamma*CMPLX(cotan, -1)
             exp_vec(0) = -gamma
             coeff(1) = 4.9*lambda*gamma*temp/(42*temp**2-gamma**2)
-            exp_vec(1) = -temp*SQRT(42)
+            exp_vec(1) = -temp*SQRT(42.0_DP)
             cinf = 0.1 * lambda * gamma / temp
         else
             cotan = cos(0.5*gamma/temp)/sin(0.5*gamma/temp)
@@ -49,7 +49,7 @@ module bath
 
     subroutine lambda_bc(A, IA)
         complex(kind=DP), dimension(:,:), intent(in) :: A
-        complex(kind=DP), dimension(:,:,:), intent(out) :: IA
+        complex(kind=DP), dimension(0:,:,:), intent(out) :: IA
 
         integer :: M, i, j
         real(kind=DP) :: ti, tmp_dt, t2j, t2j1, t2j2, tau
