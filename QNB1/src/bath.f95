@@ -21,6 +21,9 @@ module bath
         integer :: i
 
         if (pade) then
+            matsu = 1
+            allocate(coeff(0:matsu))
+            allocate(exp_vec(0:matsu))
             cotan = 2*temp/gamma - gamma/(20*temp)-4.9*gamma*temp/(42*temp**2-gamma**2)
             coeff(0) = lambda*gamma*CMPLX(cotan, -1)
             exp_vec(0) = -gamma
@@ -28,6 +31,8 @@ module bath
             exp_vec(1) = -temp*SQRT(42.0_DP)
             cinf = 0.1 * lambda * gamma / temp
         else
+            allocate(coeff(0:matsu))
+            allocate(exp_vec(0:matsu))
             cotan = cos(0.5*gamma/temp)/sin(0.5*gamma/temp)
 
             ! Set up gamma coefficient

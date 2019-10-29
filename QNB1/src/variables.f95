@@ -36,6 +36,7 @@ contains
         allocate(VI(ss,ss))
         allocate(eigval(ss))
         allocate(eigvect(ss,ss))
+        allocate(diag(ss,ss))
 
         allocate(k1(ss,ss))
         allocate(k2(ss,ss))
@@ -46,15 +47,6 @@ contains
         allocate(tmp_arr2(ss,ss))
         allocate(tmp_arr3(ss,ss))
         allocate(tmp_arr4(ss,ss))
-
-        if (pade) then
-            matsu = 1
-            allocate(coeff(0:matsu))
-            allocate(exp_vec(0:matsu))
-        else
-            allocate(coeff(0:matsu))
-            allocate(exp_vec(0:matsu))
-        end if
 
         ! Set up the unit vectors for the shitty reduced density
         b1 = 0
