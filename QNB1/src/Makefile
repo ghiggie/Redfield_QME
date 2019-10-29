@@ -1,6 +1,7 @@
 FC=gfortran
 
-OPTS=-O3
+OPTS=-O3 -fcheck=all
+
 LIBS=-L/usr/lib64 -llapack -lblas
 
 all: constants.o variables.o helper.o bath.o main.o BornMarkov1B

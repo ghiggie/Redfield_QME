@@ -65,9 +65,10 @@ program main
     allocate(bath_VI(0:n_steps,ss,ss))
     ! Create the arrays needed for the bath correlation calculation
     call bc_coeff()
+    
     ! Create the array of values for lambda_bc, to be stored in bath_VI
     call lambda_bc(VI, bath_VI) ! Later need to compute half time-steps
-
+    
     ! Set up the summary file
     open(20, file = 'BornMarkov1B.out')
     write(20, '(3a)') '*** Born Markov with One Bath (BornMarkov1B)', version, '***'
@@ -142,7 +143,7 @@ program main
         write(10, '(f10.3,L2,e15.6)') ti, tmp_l1, tmp_r1
     end do
     close(10)
-
+    
     open(10, file='positivity.dat')
     do i = 0, n_steps
         ti = i * dt
@@ -150,7 +151,7 @@ program main
         write(10, '(f10.3,L2)') ti, tmp_l1
     end do
     close(10)
-
+    
     open(10, file='entropy.dat')
     do i = 0, n_steps
         ti = i * dt

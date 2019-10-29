@@ -104,8 +104,6 @@ module helper
      function test_positivity(A)
         complex(kind=DP), dimension(:,:), intent(in) :: A
         logical :: test_positivity
-        complex(kind=DP), dimension(:,:), allocatable :: eigvect
-        real(kind=DP), dimension(:), allocatable :: eigval
         integer :: i, n
 
         n = size(A, dim=1)
