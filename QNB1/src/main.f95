@@ -7,6 +7,12 @@ program main
 
     implicit none
 
+    character(len=40) :: filename, arg, hostname
+    complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI
+    integer :: n_arg, i
+    logical :: tmp_l1
+    real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3
+
     namelist/params/dt,time_limit,pade,matsu,temp,gamma,lambda,rho0,HS,VI
 
     n_arg = iargc()
@@ -60,7 +66,7 @@ program main
     ! Create the arrays needed for the bath correlation calculation
     call bc_coeff()
     ! Create the array of values for lambda_bc, to be stored in bath_VI
-    call lambda_bc(VI, bath_VI)
+    call lambda_bc(VI, bath_VI) ! Later need to compute half time-steps
 
     ! Set up the summary file
     open(20, file = 'BornMarkov1B.out')
@@ -72,9 +78,9 @@ program main
 
     write(20,'(/a)') 'System Hamiltonian:'
 
-    tmpl_1 = test_hermitian(HS)
+    tmp_l1 = test_hermitian(HS)
 
-    if (tmpl_1) then
+    if (tmp_l1) then
         write(20,'(/a)') 'Self-Adjoint.'
     else
         write(20,'(/a)') '**** NOT Self-Adjoint. ****'
@@ -91,31 +97,31 @@ program main
         ti = i * dt
 
         tc = ti
-        tmp1 = rho(i,:,:)
-        tmp2 = bath_VI(i,:,:)
-        tmp3 = matmul(tmp2, tmp1) - matmul(tmp1, transpose(conjg(tmp2)))
-        k1 = -CMPLX(0,1)*(matmul(HS,tmp1)-matmul(tmp1,HS)) - (matmul(VI,tmp3)-matmul(tmp3,VI))
+        tmp_arr1 = rho(i,:,:)
+        tmp_arr2 = bath_VI(i,:,:)
+        tmp_arr3 = matmul(tmp_arr2, tmp_arr1) - matmul(tmp_arr1, transpose(conjg(tmp_arr2)))
+        k1 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
         tc = ti + dt / 2
-        tmp1 = rho(i,:,:) + k1 * dt / 2
-        tmp2 = 0.5 * (bath_VI(i,:,:) + bath_VI(i+1,:,:)) ! Not happy about this
-        tmp3 = matmul(tmp2, tmp1) - matmul(tmp1, transpose(conjg(tmp2)))
-        k2 = -CMPLX(0,1)*(matmul(HS,tmp1)-matmul(tmp1,HS)) - (matmul(VI,tmp3)-matmul(tmp3,VI))
+        tmp_arr1 = rho(i,:,:) + k1 * dt / 2
+        tmp_arr2 = 0.5 * (bath_VI(i,:,:) + bath_VI(i+1,:,:)) ! Not happy about this
+        tmp_arr3 = matmul(tmp_arr2, tmp_arr1) - matmul(tmp_arr1, transpose(conjg(tmp_arr2)))
+        k2 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
         tc = ti + dt / 2
-        tmp1 = rho(i,:,:) + k2 * dt / 2
-        tmp2 = 0.5 * (bath_VI(i,:,:) + bath_VI(i+1,:,:)) ! Not happy about this
-        tmp3 = matmul(tmp2, tmp1) - matmul(tmp1, transpose(conjg(tmp2)))
-        k3 = -CMPLX(0,1)*(matmul(HS,tmp1)-matmul(tmp1,HS)) - (matmul(VI,tmp3)-matmul(tmp3,VI))
+        tmp_arr1 = rho(i,:,:) + k2 * dt / 2
+        tmp_arr2 = 0.5 * (bath_VI(i,:,:) + bath_VI(i+1,:,:)) ! Not happy about this
+        tmp_arr3 = matmul(tmp_arr2, tmp_arr1) - matmul(tmp_arr1, transpose(conjg(tmp_arr2)))
+        k3 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
         tc = ti + dt
-        tmp1 = rho(i,:,:) + k3 * dt
-        tmp2 = bath_VI(i+1,:,:)
-        tmp3 = matmul(tmp2, tmp1) - matmul(tmp1, transpose(conjg(tmp2)))
-        k4 = -CMPLX(0,1)*(matmul(HS,tmp1)-matmul(tmp1,HS)) - (matmul(VI,tmp3)-matmul(tmp3,VI))
+        tmp_arr1 = rho(i,:,:) + k3 * dt
+        tmp_arr2 = bath_VI(i+1,:,:)
+        tmp_arr3 = matmul(tmp_arr2, tmp_arr1) - matmul(tmp_arr1, transpose(conjg(tmp_arr2)))
+        k4 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
         rho(i+1,:,:) = rho(i,:,:) + (dt / 6) * (k1 + 2*k2 + 2*k3 + k4)
-        write(10,'(f10.3,8(e15.6))') ti+dt,((rho(i+1,j,k),j=1,ss),k=1,ss)
+        write(10,'(f10.3,8(e15.6))') ti+dt,((rho(i+1,j,k),j=1,ss),k=1,ss) ! Remove later
     end do
 
     close(10)
@@ -123,53 +129,53 @@ program main
     open(10, file='hermitian.dat')
     do i = 0, n_steps
         ti = i * dt
-        tmpl_1 = test_hermitian(rho(i,:,:))
-        write(10, '(f10.3,L2)') ti, tmpl_1
+        tmp_l1 = test_hermitian(rho(i,:,:))
+        write(10, '(f10.3,L2)') ti, tmp_l1
     end do
     close(10)
 
     open(10, file='trace.dat')
     do i = 0, n_steps
         ti = i * dt
-        tmpl_1 = test_trace(rho(i,:,:))
-        tmp_val1 = REAL(trace(rho(i,:,:)), kind=DP)
-        write(10, '(f10.3,L2,e15.6)') ti, tmpl_1, tmp_val1
+        tmp_l1 = test_trace(rho(i,:,:))
+        tmp_r1 = REAL(trace(rho(i,:,:)), kind=DP)
+        write(10, '(f10.3,L2,e15.6)') ti, tmp_l1, tmp_r1
     end do
     close(10)
 
     open(10, file='positivity.dat')
     do i = 0, n_steps
         ti = i * dt
-        tmpl_1 = test_positivity(rho(i,:,:))
-        write(10, '(f10.3,L2)') ti, tmpl_1
+        tmp_l1 = test_positivity(rho(i,:,:))
+        write(10, '(f10.3,L2)') ti, tmp_l1
     end do
     close(10)
 
     open(10, file='entropy.dat')
     do i = 0, n_steps
         ti = i * dt
-        tmp_val1 = REAL(Entropy(rho(i,:,:)), kind=DP)
-        write(10, '(f10.3,e15.6)') ti, tmp_val1
+        tmp_r1 = REAL(Entropy(rho(i,:,:)), kind=DP)
+        write(10, '(f10.3,e15.6)') ti, tmp_r1
     end do
     close(10)
 
     open(10, file='stats_E.dat')
     do i = 0, n_steps
         ti = i * dt
-        tmp_val1 = REAL(trace(matmul(HS, rho(i,:,:))), kind=DP)
-        tmp_val2 = REAL(trace(matmul(HS, matmul(HS, rho(i,:,:)))), kind=DP)
-        tmp_val3 = REAL(SQRT(tmp_val2 - tmp_val1**2), kind=DP)
-        write(10, '(f10.3,2(e15.6))') ti, tmp_val1, tmp_val3
+        tmp_r1 = REAL(trace(matmul(HS, rho(i,:,:))), kind=DP)
+        tmp_r2 = REAL(trace(matmul(HS, matmul(HS, rho(i,:,:)))), kind=DP)
+        tmp_r3 = REAL(SQRT(tmp_r2 - tmp_r1**2), kind=DP)
+        write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
     end do
     close(10)
 
     open(10, file='stats_XS.dat')
     do i = 0, n_steps
         ti = i * dt
-        tmp_val1 = REAL(trace(matmul(VI, rho(i,:,:))), kind=DP)
-        tmp_val2 = REAL(trace(matmul(VI, matmul(VI, rho(i,:,:)))), kind=DP)
-        tmp_val3 = REAL(SQRT(tmp_val2 - tmp_val1**2), kind=DP)
-        write(10, '(f10.3,2(e15.6))') ti, tmp_val1, tmp_val3
+        tmp_r1 = REAL(trace(matmul(VI, rho(i,:,:))), kind=DP)
+        tmp_r2 = REAL(trace(matmul(VI, matmul(VI, rho(i,:,:)))), kind=DP)
+        tmp_r3 = REAL(SQRT(tmp_r2 - tmp_r1**2), kind=DP)
+        write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
     end do
     close(10)
 

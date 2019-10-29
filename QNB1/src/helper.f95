@@ -35,10 +35,9 @@ module helper
 
          call eigensystem(A, eigval, eigvect)
 
-         Entropy = -SUM(eigval * LOG(eigval))
+         Entropy = -SUM(eigval * LOG(eigval), mask=eigval>0.0_DP)
      end function Entropy
 
-     ! This subroutine is better, but still needs to be improved. Come back later
      subroutine I2S(A, B, C)
         ! Computes
         !        e^{-iA}Be^{iA}
@@ -53,9 +52,8 @@ module helper
         call eigensystem(A,eigval,eigvect)
 
         ! Construct the diagonal matrix of e^{-iA}
-        ! Remember that ss is a global variable for the dimension of the system
         do i = 1, ss
-            diag(i,i) = cmplx(cos(-eigval(i)), sin(-eigval(i)))
+            diag(i,i) = cmplx(cos(eigval(i)), sin(-eigval(i)))
         end do
 
         ! Construct e^{-iA}
@@ -67,35 +65,19 @@ module helper
 
      ! Right now, this only works for a four dimensional Hilbert space
      ! that we want to decompose into two two-dimensional Hilbert spaces.
-     function rhoA(A)
+     subroutine rhoA(A, B)
          complex(kind=DP), dimension(:,:), intent(in) :: A
-         complex(kind=DP), dimension(2,2) :: rhoA
-         complex(kind=DP), dimension(4,2) :: b1, b2
+         complex(kind=DP), dimension(2,2), intent(out) :: B
 
-         b1 = 0
-         b2 = 0
-         b1(1,1) = 1
-         b1(3,2) = 1
-         b2(2,1) = 1
-         b2(4,2) = 1
+         B = matmul(transpose(conjg(b1),matmul(A,b1))) + matmul(transpose(conjg(b2),matmul(A,b2)))
+     end subroutine rhoA
 
-         rhoA = matmul(transpose(conjg(b1),matmul(A,b1)) + matmul(transpose(conjg(b2),matmul(A,b2))
-     end function rhoA
-
-     function rhoB(A)
+     subroutine rhoB(A, B)
          complex(kind=DP), dimension(:,:), intent(in) :: A
-         complex(kind=DP), dimension(2,2) :: rhoB
-         complex(kind=DP), dimension(4,2) :: a1, a2
+         complex(kind=DP), dimension(2,2), intent(out) :: B
 
-         a1 = 0
-         a2 = 0
-         a1(1,1) = 1
-         a1(2,2) = 1
-         a2(3,1) = 1
-         a2(4,2) = 1
-
-         rhoB = matmul(transpose(conjg(a1),matmul(A,a1)) + matmul(transpose(conjg(a2),matmul(A,a2))
-     end function rhoB
+         B = matmul(transpose(conjg(a1),matmul(A,a1))) + matmul(transpose(conjg(a2),matmul(A,a2)))
+     end subroutine rhoB
 
      function test_hermitian(A)
         complex(kind=DP), dimension(:,:), intent(in) :: A
@@ -130,22 +112,18 @@ module helper
         test_positivity = .true.
 
         do i = 1, n
-            if (eigval(i) < 0.) test_positivity = .false.
+            if (eigval(i) < 0.0_DP) test_positivity = .false.
         end do
      end function test_positivity
 
      function test_trace(A)
         complex(kind=DP), dimension(:,:), intent(in) :: A
         logical :: test_trace
-        logical :: test
         real(kind=DP) :: tr
 
-        test = .true.
+        test_trace = .true.
         tr = sqrt(trace(A)*conjg(trace(A)))
-        if (abs(tr-1.0_DP) > tol) then
-            test = .false.
-        end if
-        test_trace = test
+        if (abs(tr-1.0_DP) > tol) test_trace = .false.
      end function test_trace
 
      function time_stamp()
@@ -164,19 +142,16 @@ module helper
                               // '  ' // time(1:2) // ':' // time(3:4)
       end function time_stamp
 
-     function trace(A)
-        complex(kind=DP), dimension(:,:), intent(in) :: A
-        complex(kind=DP) :: trace
-        complex(kind=DP) :: tr
-        integer :: n, i
+      function trace(A)
+         complex(kind=DP), dimension(:,:), intent(in) :: A
+         complex(kind=DP) :: trace
+         integer :: n, i
 
-        n = size(A, dim=1)
-        tr = 0
-        do i = 1, n
-          tr = tr + A(i,i)
-        end do
-
-        trace = tr
-     end function trace
+         n = size(A, dim=1)
+         trace = 0
+         do i = 1, n
+           trace = trace + A(i,i)
+         end do
+      end function trace
 
 end module helper
