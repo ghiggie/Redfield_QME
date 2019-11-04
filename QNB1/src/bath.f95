@@ -52,55 +52,50 @@ module bath
         end if
     end subroutine bc_coeff
 
-    subroutine lambda_bc(A, IA)
+    subroutine lambda_bc(A, IA, IA_half)
         complex(kind=DP), dimension(:,:), intent(in) :: A
         complex(kind=DP), dimension(0:,:,:), intent(out) :: IA
+        complex(kind=DP), dimension(:,:,:), intent(out) :: IA_half
+
+        complex(kind=DP), dimension(ss,ss) :: f2j, f2j1, f2j2, tmp_arr
 
         integer :: M, i, j
         real(kind=DP) :: ti, tmp_dt, t2j, t2j1, t2j2, tau
-        complex(kind=DP) :: corr
+        complex(kind=DP) :: corr, tc
 
         IA = 0
+        IA_half = 0
         IA(0,:,:) = 0.5 * cinf * A
-        M = 10 ! Number of Simpson steps. Be sure it's even
-
-        ! This loop will calculate the integral from 0 to time_limit
+        ! Calculate the integral at ti
         do i = 0, n_steps - 1
-            ! Compute the ith. integral
             ti = i * dt
+            M = 20
+            ! Begin Simpson Loop
+            tmp_arr = 0
             tmp_dt = dt / M
+            do j = 0, M/2 -1
+                ! First calculate f2j
+                tc = ti + 2*j * tmp_dt
+                call I2S(tc*HS,VI,f2j)
+                corr =sum(coeff*EXP(tc*exp_vec))
+                f2j = corr * f2j
+                ! Calculate f2j1
+                tc = ti + (2*j + 1) * tmp_dt
+                call I2S(tc*HS,VI,f2j1)
+                corr = sum(coeff * EXP(tc * exp_vec))
+                f2j1 = corr * f2j1
+                ! Calculate f2j2
+                tc = ti + (2*j + 2) * tmp_dt
+                call I2S(tc*HS,VI,f2j2)
+                corr = sum(coeff * EXP(tc * exp_vec))
+                f2j2 = corr * f2j2
 
-            ! This loop will compute the individual integral from t_i to t_(i+1)
-            tmp_arr1 = 0
-            do j = 0, M/2 - 1
-                t2j = ti + 2 * j * tmp_dt
-                t2j1 = t2j + tmp_dt
-                t2j2 = t2j1 + tmp_dt
-
-                tau = (ti+dt) - t2j
-                ! Build the non-delta coefficients for G(\tau)
-                corr = sum(coeff * EXP(exp_vec*tau))
-                ! Construct the matrix exponential
-                call I2S(tau * HS, A, tmp_arr2)
-                tmp_arr2 = corr * tmp_arr2
-
-                tau = (ti+dt) - t2j1
-                ! Build the non-delta coefficients for G(\tau)
-                corr = sum(coeff * EXP(exp_vec*tau))
-                ! Construct the matrix exponential
-                call I2S(tau * HS, A, tmp_arr3)
-                tmp_arr3 = corr * tmp_arr3
-
-                tau = (ti+dt) - t2j2
-                ! Build the non-delta coefficients for G(\tau)
-                corr = sum(coeff * EXP(exp_vec*tau))
-                ! Construct the matrix exponential
-                call I2S(tau * HS, A, tmp_arr4)
-                tmp_arr4 = corr * tmp_arr4
-
-                tmp_arr1 = tmp_arr1 + (tmp_dt/3) * (tmp_arr2+4*tmp_arr3+tmp_arr4)
+                tmp_arr = tmp_arr + (tmp_dt / 3.0_DP) * (f2j+4.0_DP*f2j1+f2j2)
+                if (j .eq. M/4 -1) then
+                    IA_half(i+1,:,:) = IA(i,:,:) + tmp_arr
+                end if
             end do
-            IA(i+1,:,:) = IA(i,:,:) + tmp_arr1
+            IA(i+1,:,:) = IA(i,:,:) + tmp_arr
         end do
     end subroutine lambda_bc
 

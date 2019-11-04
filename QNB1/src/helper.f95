@@ -58,10 +58,12 @@ module helper
         end do
 
         ! Construct e^{-iA}
-        tmp_arr1 = matmul(eigvect, matmul(diag, transpose(conjg(eigvect))))
+        tmp_i2s1 = conjg(transpose(eigvect))
+        tmp_i2s1 = matmul(eigvect, matmul(diag, tmp_i2s1))
+        tmp_i2s2 = conjg(transpose(tmp_i2s1))
 
         ! Construct e^{-iA}Be^{iA}
-        C = matmul(tmp_arr1, matmul(B, transpose(conjg(tmp_arr1))))
+        C = matmul(tmp_i2s1, matmul(B, tmp_i2s2))
     end subroutine I2S
 
      ! Right now, this only works for a four dimensional Hilbert space

@@ -8,7 +8,7 @@ program main
     implicit none
 
     character(len=40) :: filename, arg, hostname
-    complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI
+    complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI, bath_VI_half
     integer :: n_arg, i, j, k
     logical :: tmp_l1
     real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3
@@ -63,12 +63,13 @@ program main
     allocate(rho(0:n_steps,ss,ss))
     rho(0,:,:) = rho0 ! Initialize the storage
     allocate(bath_VI(0:n_steps,ss,ss))
+    allocate(bath_VI_half(n_steps,ss,ss))
     ! Create the arrays needed for the bath correlation calculation
     call bc_coeff()
-    
+
     ! Create the array of values for lambda_bc, to be stored in bath_VI
-    call lambda_bc(VI, bath_VI) ! Later need to compute half time-steps
-    
+    call lambda_bc(VI, bath_VI, bath_VI_half)
+
     ! Set up the summary file
     open(20, file = 'BornMarkov1B.out')
     write(20, '(3a)') '*** Born Markov with One Bath (BornMarkov1B)', version, '***'
@@ -105,13 +106,13 @@ program main
 
         tc = ti + dt / 2
         tmp_arr1 = rho(i,:,:) + k1 * dt / 2
-        tmp_arr2 = 0.5 * (bath_VI(i,:,:) + bath_VI(i+1,:,:)) ! Not happy about this
+        tmp_arr2 = bath_VI_half(i+1,:,:)
         tmp_arr3 = matmul(tmp_arr2, tmp_arr1) - matmul(tmp_arr1, transpose(conjg(tmp_arr2)))
         k2 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
         tc = ti + dt / 2
         tmp_arr1 = rho(i,:,:) + k2 * dt / 2
-        tmp_arr2 = 0.5 * (bath_VI(i,:,:) + bath_VI(i+1,:,:)) ! Not happy about this
+        tmp_arr2 = bath_VI_half(i+1,:,:)
         tmp_arr3 = matmul(tmp_arr2, tmp_arr1) - matmul(tmp_arr1, transpose(conjg(tmp_arr2)))
         k3 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
@@ -143,7 +144,7 @@ program main
         write(10, '(f10.3,L2,e15.6)') ti, tmp_l1, tmp_r1
     end do
     close(10)
-    
+
     open(10, file='positivity.dat')
     do i = 0, n_steps
         ti = i * dt
@@ -151,7 +152,7 @@ program main
         write(10, '(f10.3,L2)') ti, tmp_l1
     end do
     close(10)
-    
+
     open(10, file='entropy.dat')
     do i = 0, n_steps
         ti = i * dt
@@ -177,6 +178,20 @@ program main
         tmp_r2 = REAL(trace(matmul(VI, matmul(VI, rho(i,:,:)))), kind=DP)
         tmp_r3 = REAL(SQRT(tmp_r2 - tmp_r1**2), kind=DP)
         write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
+    end do
+    close(10)
+
+    open(10, file='lambda.dat')
+    do i = 0, n_steps
+        ti = i * dt
+        write(10,'(f10.3,8(e15.6))') ti, ((bath_VI(i,j,k),j=1,ss),k=1,ss)
+    end do
+    close(10)
+
+    open(10, file='lambda_half.dat')
+    do i = 0, n_steps-1
+        ti = (i+0.5)*dt
+        write(10,'(f10.3,8(e15.6))') ti, ((bath_VI_half(i+1,j,k),j=1,ss),k=1,ss)
     end do
     close(10)
 

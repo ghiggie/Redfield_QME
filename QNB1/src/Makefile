@@ -25,4 +25,4 @@ BornMarkov1B: main.o constants.o variables.o helper.o bath.o
 	${FC} ${OPTS} ${LIBS} -o BornMarkov1B main.o constants.o variables.o helper.o bath.o
 
 clean:
-	rm -rf *.o *.mod BornMarkov1B *.dat
+	rm -rf *.o *.mod BornMarkov1B *.dat *.out
