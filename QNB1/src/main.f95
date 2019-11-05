@@ -10,10 +10,13 @@ program main
     character(len=40) :: filename, arg, hostname
     complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI, bath_VI_half
     integer :: n_arg, i, j, k
-    logical :: tmp_l1
+    logical :: tmp_l1, halt
     real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3
+    real :: cputime0, cputime1, cputime2
 
     namelist/params/dt,time_limit,pade,matsu,temp,gamma,lambda,rho0,HS,VI
+
+    halt = .false.
 
     n_arg = iargc()
     if (n_arg .eq. 0) then
@@ -67,33 +70,130 @@ program main
     ! Create the arrays needed for the bath correlation calculation
     call bc_coeff()
 
-    ! Create the array of values for lambda_bc, to be stored in bath_VI
-    call lambda_bc(VI, bath_VI, bath_VI_half)
-
     ! Set up the summary file
     open(20, file = 'BornMarkov1B.out')
-    write(20, '(3a)') '*** Born Markov with One Bath (BornMarkov1B)', version, '***'
+    write(20, '(3a)') '*** Born Markov with One Bath (BornMarkov1B) ', version, '***'
 
     write(20, '(/a,a)') 'Job begun at ', time_stamp()
     call get_environment_variable('HOSTNAME', hostname)
     write(20, '(/a,a)') 'Host: ', trim(hostname)
 
-    write(20,'(/a)') 'System Hamiltonian:'
-
-    tmp_l1 = test_hermitian(HS)
-
-    if (tmp_l1) then
-        write(20,'(/a)') 'Self-Adjoint.'
-    else
-        write(20,'(/a)') '**** NOT Self-Adjoint. ****'
-    end if
-
+    write(20,'(/a)') 'System Hamiltonian'
+    write(20,'(a/)') '=================='
+    write(20,'(a)') 'HS = '
     do i=1,ss
         write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(HS(i,j)),',',AIMAG(HS(i,j)),'),',j=1,ss)
     end do
+    tmp_l1 = test_hermitian(HS)
+    if (tmp_l1) then
+        write(20,'(/a)') 'The System Hamiltonian is Self-Adjoint.'
+    else
+        write(20,'(/a)') '**** The System Hamiltonian is NOT Self-Adjoint. ****'
+        halt = .true.
+    end if
+    if (tmp_l1) then
+        call eigensystem(HS,eigval,eigvect)
+        write(20,'(/a)') 'Energy Eigenvalues and Eigenvectors (in column)'
+        write(20,'(2(7x,f10.7,7x))') eigval
+        do i=1,ss
+            write(20,'(2(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
+        end do
+    end if
 
-    open(10,file='rho.dat')
-    write(10,'(f10.3,8(e15.6))') 0.0,((rho(0,j,k),j=1,ss),k=1,ss)
+    write(20, '(/a)') 'Coupling Operator to Environment'
+    write(20, '(a/)') '================================'
+    write(20,'(a)') 'VI = '
+    do i=1,ss
+        write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(VI(i,j)),',',AIMAG(VI(i,j)),'),',j=1,ss)
+    end do
+    tmp_l1 = test_hermitian(VI)
+    if (tmp_l1) then
+        write(20,'(/a)') 'The Coupling Operator is Self-Adjoint.'
+    else
+        write(20,'(/a)') '**** The Couplng Operator is NOT Self-Adjoint. ****'
+        halt = .true.
+    end if
+    if (tmp_l1) then
+        call eigensystem(VI,eigval,eigvect)
+        write(20,'(/a)') 'Coupling Operator Eigenvalues and Eigenvectors (in column)'
+        write(20,'(2(7x,f10.7,7x))') eigval
+        do i=1,ss
+            write(20,'(2(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
+        end do
+    end if
+
+    write(20, '(/a)') 'Initial Density Matrix'
+    write(20, '(a/)') '======================'
+    write(20,'(a)') 'rho0 = '
+    do i=1,ss
+        write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(rho0(i,j)),',',AIMAG(rho0(i,j)),'),',j=1,ss)
+    end do
+    tmp_l1 = test_hermitian(rho0)
+    if (tmp_l1) then
+        write(20,'(/a)') 'The Initial Density is Self-Adjoint.'
+    else
+        write(20,'(/a)') '**** The Initial Density is NOT Self-Adjoint. ****'
+        halt = .true.
+    end if
+    tmp_l1 = test_trace(rho0)
+    if (tmp_l1) then
+        write(20,'(/a,2f10.6)') 'The trace is OK. Trace = ', trace(rho0)
+    else
+        write(20,'(/a)') '**** The Initial Density is NOT Normalized. ****'
+        halt = .true.
+    end if
+    tmp_l1 = test_positivity(rho0)
+    if (tmp_l1) then
+        write(20,'(/a)') 'The Initial Density is Non-Negative.'
+    else
+        write(20,'(/a)') '**** The Initial Density is NOT Non-Negative. ****'
+        halt = .true.
+    end if
+    if (tmp_l1) then
+        call eigensystem(rho0,eigval,eigvect)
+        write(20,'(/a)') 'Initial Density Eigenvalues and Eigenvectors (in column)'
+        write(20,'(2(7x,f10.7,7x))') eigval
+        do i=1,ss
+            write(20,'(2(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
+        end do
+    end if
+
+    if (halt) then
+        write(20, '(/a)') '**** Bad Input Data ****'
+        write(20, '(a)') '**** Execution is Stopped ****'
+        STOP ''
+    end if
+
+    write(20, '(/a)') 'Environment Parameters'
+    write(20, '(a/)') '======================'
+    write(20, '(a,f12.3)') 'T = ', temp
+    write(20, '(a,f12.3)') 'gamma = ', gamma
+    write(20, '(a,f12.3)') 'lambda = ', lambda
+
+    write(20,'(/a)') 'Correlation functions:'
+    if(pade) then
+       write(20,'(a)')  '[1/1] Pade approximation is used.'
+       write(20,'(a,g15.5)') 'cinf = ', cinf
+       write(20,'(a,g15.5,a,f12.3)') 'c0 = ', coeff(0), 'gamma1 = ', abs(exp_vec(0))
+       write(20,'(a,g15.5,a,f12.3)') 'c1 = ', coeff(1), 'gamma2 = ', abs(exp_vec(1))
+    else
+       write(20,'(I2,a)') matsu, ' matsubara freaquencies are used.'
+       write(20,'(a,g15.5)') 'cinf = ', cinf
+       do i = 0, matsu
+           ! This is garbage
+           write(20,*) 'c',i,' = ', coeff(i), 'gamma',i,' = ', abs(exp_vec(i))
+       end do
+    end if
+
+    write(20, '(/a)') 'Execution Parameters'
+    write(20, '(a/)') '===================='
+    write(20, '(a,f12.3)') 'Time limit = ', time_limit
+    write(20, '(a,f12.3)') 'dt = ', dt
+
+    call CPU_TIME(cputime0)
+
+    ! Create the array of values for lambda_bc, to be stored in bath_VI
+    call lambda_bc(VI, bath_VI, bath_VI_half)
 
     do i = 0, n_steps - 1
         ti = i * dt
@@ -123,9 +223,15 @@ program main
         k4 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
         rho(i+1,:,:) = rho(i,:,:) + (dt / 6) * (k1 + 2*k2 + 2*k3 + k4)
-        write(10,'(f10.3,8(e15.6))') ti+dt,((rho(i+1,j,k),j=1,ss),k=1,ss) ! Remove later
     end do
 
+    call CPU_TIME(cputime1)
+
+    open(10,file='rho.dat')
+    do i = 0, n_steps
+        ti = i * dt
+        write(10,'(f10.3,8(e15.6))') ti,((rho(i,j,k),j=1,ss),k=1,ss)
+    end do
     close(10)
 
     open(10, file='hermitian.dat')
@@ -181,19 +287,45 @@ program main
     end do
     close(10)
 
-    open(10, file='lambda.dat')
-    do i = 0, n_steps
-        ti = i * dt
-        write(10,'(f10.3,8(e15.6))') ti, ((bath_VI(i,j,k),j=1,ss),k=1,ss)
-    end do
-    close(10)
+    call CPU_TIME(cputime2)
 
-    open(10, file='lambda_half.dat')
-    do i = 0, n_steps-1
-        ti = (i+0.5)*dt
-        write(10,'(f10.3,8(e15.6))') ti, ((bath_VI_half(i+1,j,k),j=1,ss),k=1,ss)
+    write(20, '(/a)') 'Final Density Matrix'
+    write(20, '(a/)') '======================'
+    write(20,'(a)') 'rho(final) = '
+    tmp_arr1 = rho(n_steps,:,:)
+    do i=1,ss
+        write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(tmp_arr1(i,j)),',',AIMAG(tmp_arr1(i,j)),'),',j=1,ss)
     end do
-    close(10)
+    tmp_l1 = test_hermitian(tmp_arr1)
+    if (tmp_l1) then
+        write(20,'(/a)') 'The Final Density is Self-Adjoint.'
+    else
+        write(20,'(/a)') '**** The Final Density is NOT Self-Adjoint. ****'
+    end if
+    tmp_l1 = test_trace(tmp_arr1)
+    if (tmp_l1) then
+        write(20,'(/a,2f10.6)') 'The trace is OK. Trace = ', trace(tmp_arr1)
+    else
+        write(20,'(/a)') '**** The Final Density is NOT Normalized. ****'
+    end if
+    tmp_l1 = test_positivity(tmp_arr1)
+    if (tmp_l1) then
+        write(20,'(/a)') 'The Final Density is Non-Negative.'
+    else
+        write(20,'(/a)') '**** The Final Density is NOT Non-Negative. ****'
+    end if
+    if (tmp_l1) then
+        call eigensystem(tmp_arr1,eigval,eigvect)
+        write(20,'(/a)') 'Final Density Eigenvalues and Eigenvectors (in column)'
+        write(20,'(2(7x,f10.7,7x))') eigval
+        do i=1,ss
+            write(20,'(2(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
+        end do
+    end if
+
+    write(20,'(/a,f10.5)') 'Time needed for time evolution: ', cputime1 - cputime0
+    write(20,'(a,f10.5)') 'Time needed for data output: ', cputime2 - cputime1
+    write(20,'(/a,a)') 'Job finished at ', time_stamp()
 
     close(20)
 end program main
