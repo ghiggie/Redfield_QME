@@ -10,7 +10,7 @@ program main
     character(len=40) :: filename, arg, hostname
     complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI, bath_VI_half
     integer :: n_arg, i, j, k
-    logical :: tmp_l1, halt
+    logical :: tmp_l1, halt, found_herm, found_trace, found_pos
     real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3
     real :: cputime0, cputime1, cputime2
 
@@ -230,40 +230,55 @@ program main
     open(10,file='rho.dat')
     do i = 0, n_steps
         ti = i * dt
-        write(10,'(f10.3,8(e15.6))') ti,((rho(i,j,k),j=1,ss),k=1,ss)
+        if (mod(ti, 1.0) .eq. 0) write(10,'(f10.3,8(e15.6))') ti,((rho(i,j,k),j=1,ss),k=1,ss)
     end do
     close(10)
 
     open(10, file='hermitian.dat')
+    found_herm = .false.
     do i = 0, n_steps
-        ti = i * dt
         tmp_l1 = test_hermitian(rho(i,:,:))
-        write(10, '(f10.3,L2)') ti, tmp_l1
+        if (.not. tmp_l1) then
+            ti = i * dt
+            write(10, '(f10.3,L2)') ti, tmp_l1
+            found_herm = .true.
+        end if
     end do
+    if (.not. found_herm) write(10, '(a)') 'The density remains hermitian at all times.'
     close(10)
 
     open(10, file='trace.dat')
+    found_trace = .false.
     do i = 0, n_steps
-        ti = i * dt
         tmp_l1 = test_trace(rho(i,:,:))
-        tmp_r1 = REAL(trace(rho(i,:,:)), kind=DP)
-        write(10, '(f10.3,L2,e15.6)') ti, tmp_l1, tmp_r1
+        if (.not. tmp_l1) then
+            ti = i * dt
+            tmp_r1 = REAL(trace(rho(i,:,:)))
+            write(10, '(f10.3,e15.6)') ti, tmp_r1
+            found_trace = .true.
+        end if
     end do
+    if (.not. found_trace) write(10, '(a)') 'The density remains normalized at all times.'
     close(10)
 
     open(10, file='positivity.dat')
+    found_pos = .false.
     do i = 0, n_steps
-        ti = i * dt
         tmp_l1 = test_positivity(rho(i,:,:))
-        write(10, '(f10.3,L2)') ti, tmp_l1
+        if (.not. tmp_l1) then
+            ti = i * dt
+            write(10, '(f10.3,L2)') ti, tmp_l1
+            found_pos = .true.
+        end if
     end do
+    if (.not. found_pos) write(10, '(a)') 'The density remains positive at all times.'
     close(10)
 
     open(10, file='entropy.dat')
     do i = 0, n_steps
         ti = i * dt
         tmp_r1 = REAL(Entropy(rho(i,:,:)), kind=DP)
-        write(10, '(f10.3,e15.6)') ti, tmp_r1
+        if (mod(ti, 1.0) .eq. 0) write(10, '(f10.3,e15.6)') ti, tmp_r1
     end do
     close(10)
 
@@ -273,7 +288,7 @@ program main
         tmp_r1 = REAL(trace(matmul(HS, rho(i,:,:))), kind=DP)
         tmp_r2 = REAL(trace(matmul(HS, matmul(HS, rho(i,:,:)))), kind=DP)
         tmp_r3 = REAL(SQRT(tmp_r2 - tmp_r1**2), kind=DP)
-        write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
+        if (mod(ti, 1.0) .eq. 0) write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
     end do
     close(10)
 
@@ -283,7 +298,7 @@ program main
         tmp_r1 = REAL(trace(matmul(VI, rho(i,:,:))), kind=DP)
         tmp_r2 = REAL(trace(matmul(VI, matmul(VI, rho(i,:,:)))), kind=DP)
         tmp_r3 = REAL(SQRT(tmp_r2 - tmp_r1**2), kind=DP)
-        write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
+        if (mod(ti, 1.0) .eq. 0) write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
     end do
     close(10)
 
@@ -321,6 +336,24 @@ program main
         do i=1,ss
             write(20,'(2(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
         end do
+    end if
+
+    if (found_herm) then
+        write(20, '(/a)') 'Hermiticity is not preserved at all times. See hermitian.dat'
+    else
+        write(20, '(/a)') 'Hermiticity is preserved at all times.'
+    end if
+
+    if (found_trace) then
+        write(20, '(a)') 'Trace is not preserved at all times. See trace.dat'
+    else
+        write(20, '(a)') 'Trace is preserved at all times.'
+    end if
+
+    if (found_pos) then
+        write(20, '(a)') 'Positivity is not preserved at all times. See positivity.dat'
+    else
+        write(20, '(a)') 'Positivity is preserved at all times.'
     end if
 
     write(20,'(/a,f10.5)') 'Time needed for time evolution: ', cputime1 - cputime0
