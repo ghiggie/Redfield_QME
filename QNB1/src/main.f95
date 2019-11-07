@@ -13,6 +13,7 @@ program main
     logical :: tmp_l1, halt, found_herm, found_trace, found_pos
     real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3
     real :: cputime0, cputime1, cputime2
+    character(len=2) :: tmp_str
 
     namelist/params/dt,time_limit,pade,matsu,temp,gamma,lambda,rho0,HS,VI
 
@@ -173,15 +174,16 @@ program main
     write(20,'(/a)') 'Correlation functions:'
     if(pade) then
        write(20,'(a)')  '[1/1] Pade approximation is used.'
-       write(20,'(a,g15.5)') 'cinf = ', cinf
+       write(20,'(a,f10.7,a,f10.7,a)') 'cinf = (', REAL(cinf), ',',AIMAG(cinf),')'
        write(20,'(a,g15.5,a,f12.3)') 'c0 = ', coeff(0), 'gamma1 = ', abs(exp_vec(0))
        write(20,'(a,g15.5,a,f12.3)') 'c1 = ', coeff(1), 'gamma2 = ', abs(exp_vec(1))
     else
+       write(tmp_str, '(I2)') matsu
        write(20,'(I2,a)') matsu, ' matsubara freaquencies are used.'
-       write(20,'(a,g15.5)') 'cinf = ', cinf
+       write(20,'(a,f10.7,a,f10.7,a)') 'cinf = (', REAL(cinf), ',',AIMAG(cinf),')'
        do i = 0, matsu
-           ! This is garbage
-           write(20,*) 'c',i,' = ', coeff(i), 'gamma',i,' = ', abs(exp_vec(i))
+           write(20,'(a,I1,a,f10.7,a,f10.7,a)') 'c',i,' = (',REAL(coeff(i)),',',AIMAG(coeff(i)),')'
+           write(20, '(a,I1,a,f10.7)') 'gamma',i,' = ', abs(exp_vec(i))
        end do
     end if
 
