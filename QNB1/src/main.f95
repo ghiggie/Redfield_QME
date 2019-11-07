@@ -13,7 +13,7 @@ program main
     logical :: tmp_l1, halt, found_herm, found_trace, found_pos
     real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3
     real :: cputime0, cputime1, cputime2
-    character(len=2) :: tmp_str
+    character(len=4) :: tmp_str, form_str1, form_str2
 
     namelist/params/dt,time_limit,pade,matsu,temp,gamma,lambda,rho0,HS,VI
 
@@ -72,8 +72,11 @@ program main
     call bc_coeff()
 
     ! Set up the summary file
+    write(form_str1, '(I4)') ss
+    write(form_str2, '(I4)') 4*ss
+    
     open(20, file = 'BornMarkov1B.out')
-    write(20, '(3a)') '*** Born Markov with One Bath (BornMarkov1B) ', version, '***'
+    write(20, '(3a)') '*** Born Markov with One Bath (BornMarkov1B) ', trim(version), ' ***'
 
     write(20, '(/a,a)') 'Job begun at ', time_stamp()
     call get_environment_variable('HOSTNAME', hostname)
@@ -83,7 +86,7 @@ program main
     write(20,'(a/)') '=================='
     write(20,'(a)') 'HS = '
     do i=1,ss
-        write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(HS(i,j)),',',AIMAG(HS(i,j)),'),',j=1,ss)
+        write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',REAL(HS(i,j)),',',AIMAG(HS(i,j)),'),',j=1,ss)
     end do
     tmp_l1 = test_hermitian(HS)
     if (tmp_l1) then
@@ -95,9 +98,9 @@ program main
     if (tmp_l1) then
         call eigensystem(HS,eigval,eigvect)
         write(20,'(/a)') 'Energy Eigenvalues and Eigenvectors (in column)'
-        write(20,'(2(7x,f10.7,7x))') eigval
+        write(20,'('//form_str1//'(7x,f10.7,7x))') eigval
         do i=1,ss
-            write(20,'(2(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
+            write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
         end do
     end if
 
@@ -105,7 +108,7 @@ program main
     write(20, '(a/)') '================================'
     write(20,'(a)') 'VI = '
     do i=1,ss
-        write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(VI(i,j)),',',AIMAG(VI(i,j)),'),',j=1,ss)
+        write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',REAL(VI(i,j)),',',AIMAG(VI(i,j)),'),',j=1,ss)
     end do
     tmp_l1 = test_hermitian(VI)
     if (tmp_l1) then
@@ -117,9 +120,9 @@ program main
     if (tmp_l1) then
         call eigensystem(VI,eigval,eigvect)
         write(20,'(/a)') 'Coupling Operator Eigenvalues and Eigenvectors (in column)'
-        write(20,'(2(7x,f10.7,7x))') eigval
+        write(20,'('//form_str1//'(7x,f10.7,7x))') eigval
         do i=1,ss
-            write(20,'(2(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
+            write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
         end do
     end if
 
@@ -127,7 +130,7 @@ program main
     write(20, '(a/)') '======================'
     write(20,'(a)') 'rho0 = '
     do i=1,ss
-        write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(rho0(i,j)),',',AIMAG(rho0(i,j)),'),',j=1,ss)
+        write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',REAL(rho0(i,j)),',',AIMAG(rho0(i,j)),'),',j=1,ss)
     end do
     tmp_l1 = test_hermitian(rho0)
     if (tmp_l1) then
@@ -153,9 +156,9 @@ program main
     if (tmp_l1) then
         call eigensystem(rho0,eigval,eigvect)
         write(20,'(/a)') 'Initial Density Eigenvalues and Eigenvectors (in column)'
-        write(20,'(2(7x,f10.7,7x))') eigval
+        write(20,'('//form_str1//'(7x,f10.7,7x))') eigval
         do i=1,ss
-            write(20,'(2(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
+            write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
         end do
     end if
 
@@ -167,19 +170,22 @@ program main
 
     write(20, '(/a)') 'Environment Parameters'
     write(20, '(a/)') '======================'
-    write(20, '(a,f12.3)') 'T = ', temp
-    write(20, '(a,f12.3)') 'gamma = ', gamma
-    write(20, '(a,f12.3)') 'lambda = ', lambda
+    write(20, '(a,f5.3)') '     T = ', temp
+    write(20, '(a,f5.3)') ' gamma = ', gamma
+    write(20, '(a,f5.3)') 'lambda = ', lambda
 
-    write(20,'(/a)') 'Correlation functions:'
+    write(20,'(/a)') 'Correlation functions'
+    write(20,'(a/)') '====================='
     if(pade) then
-       write(20,'(a)')  '[1/1] Pade approximation is used.'
+       write(20,'(a/)') '[1/1] Pade approximation is used.'
        write(20,'(a,f10.7,a,f10.7,a)') 'cinf = (', REAL(cinf), ',',AIMAG(cinf),')'
-       write(20,'(a,g15.5,a,f12.3)') 'c0 = ', coeff(0), 'gamma1 = ', abs(exp_vec(0))
-       write(20,'(a,g15.5,a,f12.3)') 'c1 = ', coeff(1), 'gamma2 = ', abs(exp_vec(1))
+       write(20,'(a,f10.7,a,f10.7,a)') 'c0 = (',REAL(coeff(0)),',',AIMAG(coeff(0)),')'
+       write(20,'(a,f10.7)') 'gamma0 = ', abs(exp_vec(0))
+       write(20,'(a,f10.7,a,f10.7,a)') 'c1 = (',REAL(coeff(1)),',',AIMAG(coeff(1)),')'
+       write(20,'(a,f10.7)') 'gamma1 = ', abs(exp_vec(1))
     else
        write(tmp_str, '(I2)') matsu
-       write(20,'(I2,a)') matsu, ' matsubara freaquencies are used.'
+       write(20,'(2a/)') trim(adjustl(tmp_str)), ' matsubara freaquencies are used.'
        write(20,'(a,f10.7,a,f10.7,a)') 'cinf = (', REAL(cinf), ',',AIMAG(cinf),')'
        do i = 0, matsu
            write(20,'(a,I1,a,f10.7,a,f10.7,a)') 'c',i,' = (',REAL(coeff(i)),',',AIMAG(coeff(i)),')'
@@ -189,8 +195,8 @@ program main
 
     write(20, '(/a)') 'Execution Parameters'
     write(20, '(a/)') '===================='
-    write(20, '(a,f12.3)') 'Time limit = ', time_limit
-    write(20, '(a,f12.3)') 'dt = ', dt
+    write(20, '(a,f7.3)') 'Time limit = ', time_limit
+    write(20, '(a,f7.3)') '        dt = ', dt
 
     call CPU_TIME(cputime0)
 
@@ -232,7 +238,7 @@ program main
     open(10,file='rho.dat')
     do i = 0, n_steps
         ti = i * dt
-        if (mod(ti, 1.0) .eq. 0) write(10,'(f10.3,8(e15.6))') ti,((rho(i,j,k),j=1,ss),k=1,ss)
+        if (mod(ti, 1.0) .eq. 0) write(10,'(f10.3,'//form_str2//'e15.6)') ti,((rho(i,j,k),j=1,ss),k=1,ss)
     end do
     close(10)
 
@@ -255,8 +261,7 @@ program main
         tmp_l1 = test_trace(rho(i,:,:))
         if (.not. tmp_l1) then
             ti = i * dt
-            tmp_r1 = REAL(trace(rho(i,:,:)))
-            write(10, '(f10.3,e15.6)') ti, tmp_r1
+            write(10, '(f10.3,L2)') ti, tmp_l1
             found_trace = .true.
         end if
     end do
@@ -311,7 +316,7 @@ program main
     write(20,'(a)') 'rho(final) = '
     tmp_arr1 = rho(n_steps,:,:)
     do i=1,ss
-        write(20,'(4(a,f10.7,a,f10.7,a))') ('(',REAL(tmp_arr1(i,j)),',',AIMAG(tmp_arr1(i,j)),'),',j=1,ss)
+        write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',REAL(tmp_arr1(i,j)),',',AIMAG(tmp_arr1(i,j)),'),',j=1,ss)
     end do
     tmp_l1 = test_hermitian(tmp_arr1)
     if (tmp_l1) then
@@ -321,29 +326,32 @@ program main
     end if
     tmp_l1 = test_trace(tmp_arr1)
     if (tmp_l1) then
-        write(20,'(/a,2f10.6)') 'The trace is OK. Trace = ', trace(tmp_arr1)
+        write(20,'(a,2f10.6)') 'The trace is OK. Trace = ', trace(tmp_arr1)
     else
-        write(20,'(/a)') '**** The Final Density is NOT Normalized. ****'
+        write(20,'(a)') '**** The Final Density is NOT Normalized. ****'
     end if
     tmp_l1 = test_positivity(tmp_arr1)
     if (tmp_l1) then
-        write(20,'(/a)') 'The Final Density is Non-Negative.'
+        write(20,'(a)') 'The Final Density is Non-Negative.'
     else
-        write(20,'(/a)') '**** The Final Density is NOT Non-Negative. ****'
+        write(20,'(a)') '**** The Final Density is NOT Non-Negative. ****'
     end if
     if (tmp_l1) then
         call eigensystem(tmp_arr1,eigval,eigvect)
         write(20,'(/a)') 'Final Density Eigenvalues and Eigenvectors (in column)'
-        write(20,'(2(7x,f10.7,7x))') eigval
+        write(20,'('//form_str1//'(7x,f10.7,7x))') eigval
         do i=1,ss
-            write(20,'(2(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
+            write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',real(eigvect(i,j)),',',aimag(eigvect(i,j)),'),',j=1,ss)
         end do
     end if
 
+    write(20, '(/a)') 'Other Information'
+    write(20, '(a/)') '================='
+
     if (found_herm) then
-        write(20, '(/a)') 'Hermiticity is not preserved at all times. See hermitian.dat'
+        write(20, '(a)') 'Hermiticity is not preserved at all times. See hermitian.dat'
     else
-        write(20, '(/a)') 'Hermiticity is preserved at all times.'
+        write(20, '(a)') 'Hermiticity is preserved at all times.'
     end if
 
     if (found_trace) then
@@ -363,4 +371,5 @@ program main
     write(20,'(/a,a)') 'Job finished at ', time_stamp()
 
     close(20)
+
 end program main
