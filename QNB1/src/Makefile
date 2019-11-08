@@ -1,10 +1,10 @@
 FC=gfortran
 
-OPTS=-O3 -fcheck=all
+OPTS=-O3
 
 LIBS=-L/usr/lib64 -llapack -lblas
 
-all: constants.o variables.o helper.o bath.o main.o BornMarkov1B
+all: constants.o variables.o helper.o bath.o main.o Redfield1B
 
 constants.o: constants.f95
 	${FC} ${OPTS} -c constants.f95
@@ -21,8 +21,8 @@ bath.o: bath.f95
 main.o: main.f95
 	${FC} ${OPTS} -c main.f95
 
-BornMarkov1B: main.o constants.o variables.o helper.o bath.o
-	${FC} ${OPTS} ${LIBS} -o BornMarkov1B main.o constants.o variables.o helper.o bath.o
+Redfield1B: main.o constants.o variables.o helper.o bath.o
+	${FC} ${OPTS} ${LIBS} -o Redfield1B main.o constants.o variables.o helper.o bath.o
 
 clean:
-	rm -rf *.o *.mod BornMarkov1B *.dat *.out
+	rm -rf *.o *.mod Redfield1B *.dat *.out

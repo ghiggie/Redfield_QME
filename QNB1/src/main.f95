@@ -22,7 +22,7 @@ program main
     n_arg = iargc()
     if (n_arg .eq. 0) then
         write(*,*) ' System size and configuration file are required.'
-        write(*,*) ' Usage: ./BornMarkov1B [-h] [-v] system_size config_file'
+        write(*,*) ' Usage: ./Redfield1B [-h] [-v] system_size config_file'
     else
         do i = 1, n_arg
             call getarg(i, arg)
@@ -30,10 +30,10 @@ program main
             case('-v')
                 write(*,*) 'Coded by ', trim(coded_by)
                 write(*,*) 'Last Updated: ', trim(last_update)
-                write(*,*) 'Born Markov with one bath: ', trim(version)
+                write(*,*) 'Redfield with one bath: ', trim(version)
                 STOP ''
             case('-h')
-                write(*,*) ' Usage: ./BornMarkov1B [-h] [-v] system_size config_file'
+                write(*,*) ' Usage: ./Redfield1B [-h] [-v] system_size config_file'
                 write(*,*) ' Required Parameters:'
                 write(*,*) '    system_size: size of the system Hilbert space'
                 write(*,*) '    config_file: parameter values in namelist format'
@@ -48,7 +48,7 @@ program main
                     filename = trim(arg)
                 else
                     write(*,*) ' Too many parameters'
-                    write(*,*) ' Usage: ./BornMarkov1B [-h] [-v] system_size config_file'
+                    write(*,*) ' Usage: ./Redfield1B [-h] [-v] system_size config_file'
                 end if
             end select
         end do
@@ -73,10 +73,10 @@ program main
 
     ! Set up the summary file
     write(form_str1, '(I4)') ss
-    write(form_str2, '(I4)') 4*ss
+    write(form_str2, '(I4)') 2*ss**2
     
-    open(20, file = 'BornMarkov1B.out')
-    write(20, '(3a)') '*** Born Markov with One Bath (BornMarkov1B) ', trim(version), ' ***'
+    open(20, file = 'Redfield1B.out')
+    write(20, '(3a)') '*** Redfield with One Bath (Redfield1B) ', trim(version), ' ***'
 
     write(20, '(/a,a)') 'Job begun at ', time_stamp()
     call get_environment_variable('HOSTNAME', hostname)
@@ -132,7 +132,7 @@ program main
     do i=1,ss
         write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',REAL(rho0(i,j)),',',AIMAG(rho0(i,j)),'),',j=1,ss)
     end do
-    tmp_l1 = test_hermitian(rho0)
+    tmp_l1 = test_hermitian(rho(0,:,:))
     if (tmp_l1) then
         write(20,'(/a)') 'The Initial Density is Self-Adjoint.'
     else
@@ -141,16 +141,16 @@ program main
     end if
     tmp_l1 = test_trace(rho0)
     if (tmp_l1) then
-        write(20,'(/a,2f10.6)') 'The trace is OK. Trace = ', trace(rho0)
+        write(20,'(a,2f10.6)') 'The trace is OK. Trace = ', trace(rho0)
     else
-        write(20,'(/a)') '**** The Initial Density is NOT Normalized. ****'
+        write(20,'(a)') '**** The Initial Density is NOT Normalized. ****'
         halt = .true.
     end if
     tmp_l1 = test_positivity(rho0)
     if (tmp_l1) then
-        write(20,'(/a)') 'The Initial Density is Non-Negative.'
+        write(20,'(a)') 'The Initial Density is Non-Negative.'
     else
-        write(20,'(/a)') '**** The Initial Density is NOT Non-Negative. ****'
+        write(20,'(a)') '**** The Initial Density is NOT Non-Negative. ****'
         halt = .true.
     end if
     if (tmp_l1) then
@@ -195,8 +195,8 @@ program main
 
     write(20, '(/a)') 'Execution Parameters'
     write(20, '(a/)') '===================='
-    write(20, '(a,f7.3)') 'Time limit = ', time_limit
-    write(20, '(a,f7.3)') '        dt = ', dt
+    write(20, '(a,f8.3)') 'Time limit = ', time_limit
+    write(20, '(a,f5.3)') '        dt = ', dt
 
     call CPU_TIME(cputime0)
 
@@ -238,7 +238,7 @@ program main
     open(10,file='rho.dat')
     do i = 0, n_steps
         ti = i * dt
-        if (mod(ti, 1.0) .eq. 0) write(10,'(f10.3,'//form_str2//'e15.6)') ti,((rho(i,j,k),j=1,ss),k=1,ss)
+        if (mod(ti, 1.0) .eq. 0) write(10,'(f10.3,('//form_str2//'e15.6))') ti,((rho(i,j,k),j=1,ss),k=1,ss)
     end do
     close(10)
 
