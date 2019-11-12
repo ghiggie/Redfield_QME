@@ -1,6 +1,8 @@
 FC=gfortran
+#FC=pgfortran
 
 OPTS=-O3
+#OPTS=-O3 -Minfo
 
 LIBS=-L/usr/lib64 -llapack -lblas
 

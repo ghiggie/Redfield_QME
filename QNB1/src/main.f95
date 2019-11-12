@@ -9,7 +9,7 @@ program main
 
     character(len=40) :: filename, arg, hostname
     complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI, bath_VI_half
-    integer :: n_arg, i, j, k
+    integer :: n_arg, i, j, k, iargc
     logical :: tmp_l1, halt, found_herm, found_trace, found_pos
     real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3
     real :: cputime0, cputime1, cputime2
@@ -74,7 +74,7 @@ program main
     ! Set up the summary file
     write(form_str1, '(I4)') ss
     write(form_str2, '(I4)') 2*ss**2
-    
+
     open(20, file = 'Redfield1B.out')
     write(20, '(3a)') '*** Redfield with One Bath (Redfield1B) ', trim(version), ' ***'
 
