@@ -10,7 +10,7 @@ module variables
     implicit none
 
     !!! User Parameters set in params.cfg and through flags
-    real(kind = DP) :: dt, time_limit, temp, gamma, lambda
+    real(kind = DP) :: dt, time_limit, time_write, temp, gamma, lambda
     logical :: pade
     integer :: matsu, ss
     complex(kind = DP), dimension(:,:), allocatable :: rho0, HS, VI

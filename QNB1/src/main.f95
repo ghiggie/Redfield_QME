@@ -11,11 +11,11 @@ program main
     complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI, bath_VI_half
     integer :: n_arg, i, j, k, iargc
     logical :: tmp_l1, halt, found_herm, found_trace, found_pos
-    real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3
+    real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3, mod
     real :: cputime0, cputime1, cputime2
     character(len=4) :: tmp_str, form_str1, form_str2
 
-    namelist/params/dt,time_limit,pade,matsu,temp,gamma,lambda,rho0,HS,VI
+    namelist/params/dt,time_limit,time_write,pade,matsu,temp,gamma,lambda,rho0,HS,VI
 
     halt = .false.
 
@@ -238,7 +238,16 @@ program main
     open(10,file='rho.dat')
     do i = 0, n_steps
         ti = i * dt
-        if (mod(ti, 1.0) .eq. 0) write(10,'(f10.3,('//form_str2//'e15.6))') ti,((rho(i,j,k),j=1,ss),k=1,ss)
+        mod = ti - nint(ti/time_write)*time_write
+        if (mod .eq. 0) write(10,'(f10.3,('//form_str2//'e15.6))') ti,((rho(i,j,k),j=1,ss),k=1,ss)
+    end do
+    close(10)
+
+    open(10,file='lambda.dat')
+    do i = 0, n_steps
+        ti = i * dt
+        mod = ti - nint(ti/time_write)*time_write
+        if (mod .eq. 0) write(10,'(f10.3,('//form_str2//'e15.6))') ti,((bath_VI(i,j,k),j=1,ss),k=1,ss)
     end do
     close(10)
 
@@ -285,7 +294,8 @@ program main
     do i = 0, n_steps
         ti = i * dt
         tmp_r1 = REAL(Entropy(rho(i,:,:)), kind=DP)
-        if (mod(ti, 1.0) .eq. 0) write(10, '(f10.3,e15.6)') ti, tmp_r1
+        mod = ti - nint(ti/time_write)*time_write
+        if (mod .eq. 0) write(10, '(f10.3,e15.6)') ti, tmp_r1
     end do
     close(10)
 
@@ -295,7 +305,8 @@ program main
         tmp_r1 = REAL(trace(matmul(HS, rho(i,:,:))), kind=DP)
         tmp_r2 = REAL(trace(matmul(HS, matmul(HS, rho(i,:,:)))), kind=DP)
         tmp_r3 = REAL(SQRT(tmp_r2 - tmp_r1**2), kind=DP)
-        if (mod(ti, 1.0) .eq. 0) write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
+        mod = ti - nint(ti/time_write)*time_write
+        if (mod .eq. 0) write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
     end do
     close(10)
 
@@ -305,7 +316,8 @@ program main
         tmp_r1 = REAL(trace(matmul(VI, rho(i,:,:))), kind=DP)
         tmp_r2 = REAL(trace(matmul(VI, matmul(VI, rho(i,:,:)))), kind=DP)
         tmp_r3 = REAL(SQRT(tmp_r2 - tmp_r1**2), kind=DP)
-        if (mod(ti, 1.0) .eq. 0) write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
+        mod = ti - nint(ti/time_write)*time_write
+        if (mod .eq. 0) write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
     end do
     close(10)
 
