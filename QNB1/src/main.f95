@@ -11,19 +11,21 @@ program main
     complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI, bath_VI_half
     integer :: n_arg, i, j, k, iargc
     logical :: tmp_l1, halt, found_herm, found_trace, found_pos
+    logical :: gibbs, random, normalize
     real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3, mod
+    complex(kind=DP) :: Z
     real :: cputime0, cputime1, cputime2
     character(len=4) :: tmp_str, form_str1, form_str2
 
     namelist/params/dt,time_limit,time_write,pade,matsu,temp,gamma,lambda,rho0,HS,VI
 
     halt = .false.
+    gibbs = .false.
+    random = .false.
+    normalize = .false.
 
     n_arg = iargc()
-    if (n_arg .eq. 0) then
-        write(*,*) ' System size and configuration file are required.'
-        write(*,*) ' Usage: ./Redfield1B [-h] [-v] system_size config_file'
-    else
+    if (n_arg .gt. 0) then
         do i = 1, n_arg
             call getarg(i, arg)
             select case(trim(arg))
@@ -33,25 +35,43 @@ program main
                 write(*,*) 'Redfield with one bath: ', trim(version)
                 STOP ''
             case('-h')
-                write(*,*) ' Usage: ./Redfield1B [-h] [-v] system_size config_file'
+                write(*,*) ' Usage: ./Redfield1B [-h] [-v] [-G|-R] [-N] system_size config_file'
                 write(*,*) ' Required Parameters:'
                 write(*,*) '    system_size: size of the system Hilbert space'
                 write(*,*) '    config_file: parameter values in namelist format'
                 write(*,*) ' Optional Parameters:'
                 write(*,*) '    -h: show this usage information'
                 write(*,*) '    -v: show the version number'
+                write(*,*) '    -G: use an initial Gibbs density'
+                write(*,*) '    -R: use an initial random density'
+                write(*,*) '    -N: automatically normalize the input density'
                 STOP ''
+            case('-G')
+                gibbs = .true.
+            case('-R')
+                random = .true.
+            case('-N')
+                normalize = .true.
             case default
-                if (i .eq. 1) then
+                if (i .eq. n_arg - 1) then
                     read(arg,*) ss
-                else if (i .eq. 2) then
+                else if (i .eq. n_arg) then
                     filename = trim(arg)
-                else
-                    write(*,*) ' Too many parameters'
-                    write(*,*) ' Usage: ./Redfield1B [-h] [-v] system_size config_file'
                 end if
             end select
         end do
+    else
+        write(*,*) ' System size and configuration file are required.'
+        write(*,*) ' Usage: ./Redfield1B [-h] [-v] [-G|-R] [-N] system_size config_file'
+        write(*,*) ' Type ./Redfield1B -h for full usage information.'
+        STOP ''
+    end if
+
+    if (gibbs .and. random) then
+        write(*,*) 'You cannot use -G and -R simultaneously.'
+        write(*,*) ' Usage: ./Redfield1B [-h] [-v] [-G|-R] [-N] system_size config_file'
+        write(*,*) ' Type ./Redfield1B -h for full usage information.'
+        STOP ''
     end if
 
     ! Initialize the single time-step arrays
@@ -62,6 +82,39 @@ program main
     close(10)
 
     n_steps = nint(time_limit / dt)
+
+    if (gibbs) then ! Generate Gibbs state
+        rho0 = 0
+        call eigensystem(rho0, eigval, eigvect)
+        do k=1, ss
+            do i=1, ss
+                do j=1, ss
+                    rho0(i,j) = rho0(i,j) + eigvect(i,k)*conjg(eigvect(j,k))*exp(-eigval(k)/temp)
+                end do
+            end do
+        end do
+        Z = trace(rho0)
+        rho0 = rho0 / Z
+    else if (random) then ! Generate random state
+        do i=1,ss
+            do j=1,ss
+                call random_number(tmp_r1)
+                call random_number(tmp_r2)
+                rho0(i,j) = cmplx(tmp_r1, tmp_r2)
+            end do
+        end do
+        rho0 = matmul(rho0,transpose(conjg(rho0)))
+        do i=1,ss
+            rho0(i,i) = cmplx(real(rho0(i,i),kind=DP),0.0_DP)
+        end do
+        Z = trace(rho0)
+        rho0 = rho0/Z
+    end if
+
+    if (normalize) then
+        Z = trace(rho0)
+        rho0 = rho0 / Z
+    end if
 
     ! Initialize the multi time-step arrays
     allocate(rho(0:n_steps,ss,ss))
@@ -128,6 +181,11 @@ program main
 
     write(20, '(/a)') 'Initial Density Matrix'
     write(20, '(a/)') '======================'
+    if (gibbs) then
+        write(20,'(/a)') 'A Gibbs state is used for the initial density.'
+    else if (random) then
+        write(20,'(/a)') 'A random state is used for the initial density.'
+    end if
     write(20,'(a)') 'rho0 = '
     do i=1,ss
         write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',REAL(rho0(i,j)),',',AIMAG(rho0(i,j)),'),',j=1,ss)
@@ -248,6 +306,15 @@ program main
         ti = i * dt
         mod = ti - nint(ti/time_write)*time_write
         if (mod .eq. 0) write(10,'(f10.3,('//form_str2//'e15.6))') ti,((bath_VI(i,j,k),j=1,ss),k=1,ss)
+    end do
+    close(10)
+
+    open(10, file='eta.dat')
+    do i = 0, n_steps
+        ti = i * dt
+        mod = ti - nint(ti/time_write)*time_write
+        eta = CMPLX(0,1)*(matmul(rho(i,:,:),transpose(conjg(bath_VI(i,:,:))))-matmul(bath_VI(i,:,:),rho(i,:,:)))
+        if (mod .eq. 0) write(10,'(f10.3,('//form_str2//'e15.6))') ti,((eta(j,k),j=1,ss),k=1,ss)
     end do
     close(10)
 
