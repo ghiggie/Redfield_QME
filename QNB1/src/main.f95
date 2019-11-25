@@ -16,8 +16,8 @@ program main
     complex(kind=DP) :: Z
     real :: cputime0, cputime1, cputime2
     character(len=4) :: tmp_str, form_str1, form_str2
-    complex(kind=DP) :: tmp_c2, tmp_c2
-    complex(kind=DP), dimension(:) :: sys_entropy, energy, heat, sprod
+    complex(kind=DP) :: tmp_c1, tmp_c2
+    complex(kind=DP), dimension(:), allocatable :: sys_entropy, energy, heat, sprod
 
     namelist/params/dt,time_limit,time_write,pade,matsu,temp,gamma,lambda,rho0,HS,VI
 
@@ -322,7 +322,7 @@ program main
 
     ! Calculate entropy production
     do i = 0, n_steps
-        sprod(i) = (energy(i)-energy(0)) - heat(i) / temp
+        sprod(i) = (sys_entropy(i)-sys_entropy(0)) - heat(i) / temp
     end do
 
     call CPU_TIME(cputime1)

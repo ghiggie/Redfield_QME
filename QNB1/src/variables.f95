@@ -19,7 +19,7 @@ module variables
     complex(kind=DP) :: cinf
     complex(kind=DP), dimension(:,:), allocatable :: k1, k2, k3, k4
     complex(kind=DP), dimension(:,:), allocatable :: tmp_arr1, tmp_arr2, tmp_arr3, tmp_arr4
-    complex(kind=DP), dimension(:,:), allocatable :: tmp_i2s1, tmp_i2s2, eta
+    complex(kind=DP), dimension(:,:), allocatable :: tmp_i2s1, tmp_i2s2
     real(kind=DP), dimension(:), allocatable :: eigval, exp_vec
     complex(kind=DP), dimension(:,:), allocatable :: eigvect, diag
     complex(kind=DP), dimension(:), allocatable :: coeff
@@ -43,7 +43,6 @@ contains
         allocate(k2(ss,ss))
         allocate(k3(ss,ss))
         allocate(k4(ss,ss))
-        allocate(eta(ss,ss))
 
         allocate(tmp_arr1(ss,ss))
         allocate(tmp_arr2(ss,ss))
