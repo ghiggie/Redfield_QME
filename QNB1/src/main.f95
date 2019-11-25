@@ -8,7 +8,7 @@ program main
     implicit none
 
     character(len=40) :: filename, arg, hostname
-    complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI, bath_VI_half
+    complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI, bath_VI_half, eta
     integer :: n_arg, i, j, k, iargc
     logical :: tmp_l1, halt, found_herm, found_trace, found_pos
     logical :: gibbs, random, normalize
@@ -16,6 +16,8 @@ program main
     complex(kind=DP) :: Z
     real :: cputime0, cputime1, cputime2
     character(len=4) :: tmp_str, form_str1, form_str2
+    complex(kind=DP) :: tmp_c2, tmp_c2
+    complex(kind=DP), dimension(:) :: sys_entropy, energy, heat, sprod
 
     namelist/params/dt,time_limit,time_write,pade,matsu,temp,gamma,lambda,rho0,HS,VI
 
@@ -121,6 +123,11 @@ program main
     rho(0,:,:) = rho0 ! Initialize the storage
     allocate(bath_VI(0:n_steps,ss,ss))
     allocate(bath_VI_half(n_steps,ss,ss))
+    allocate(sys_entropy(0:n_steps))
+    allocate(eta(0:n_steps,ss,ss))
+    allocate(energy(0:n_steps))
+    allocate(heat(0:n_steps))
+    allocate(sprod(0:n_steps))
     ! Create the arrays needed for the bath correlation calculation
     call bc_coeff()
 
@@ -291,6 +298,33 @@ program main
         rho(i+1,:,:) = rho(i,:,:) + (dt / 6) * (k1 + 2*k2 + 2*k3 + k4)
     end do
 
+    ! Calculate entropy
+    do i = 0, n_steps
+        sys_entropy(i) = Entropy(rho(i,:,:))
+    end do
+
+    ! Calculate eta
+    do i = 0, n_steps
+        eta(i,:,:) = CMPLX(0,1)*(matmul(rho(i,:,:),transpose(conjg(bath_VI(i,:,:))))-matmul(bath_VI(i,:,:),rho(i,:,:)))
+    end do
+
+    ! Calculate system energy
+    do i = 0, n_steps
+        energy(i) = trace(matmul(HS, rho(i,:,:)))
+    end do
+
+    ! Calculate heat
+    do i = 0, n_steps
+        tmp_c1 = energy(i) - energy(0)
+        tmp_c2 = trace(matmul(VI,eta(i,:,:))) - trace(matmul(VI,eta(0,:,:)))
+        heat(i) = tmp_c1 + tmp_c2
+    end do
+
+    ! Calculate entropy production
+    do i = 0, n_steps
+        sprod(i) = (energy(i)-energy(0)) - heat(i) / temp
+    end do
+
     call CPU_TIME(cputime1)
 
     open(10,file='rho.dat')
@@ -313,8 +347,7 @@ program main
     do i = 0, n_steps
         ti = i * dt
         mod = ti - nint(ti/time_write)*time_write
-        eta = CMPLX(0,1)*(matmul(rho(i,:,:),transpose(conjg(bath_VI(i,:,:))))-matmul(bath_VI(i,:,:),rho(i,:,:)))
-        if (mod .eq. 0) write(10,'(f10.3,('//form_str2//'e15.6))') ti,((eta(j,k),j=1,ss),k=1,ss)
+        if (mod .eq. 0) write(10,'(f10.3,('//form_str2//'e15.6))') ti,((eta(i,j,k),j=1,ss),k=1,ss)
     end do
     close(10)
 
@@ -360,7 +393,7 @@ program main
     open(10, file='entropy.dat')
     do i = 0, n_steps
         ti = i * dt
-        tmp_r1 = REAL(Entropy(rho(i,:,:)), kind=DP)
+        tmp_r1 = REAL(sys_entropy(i), kind=DP)
         mod = ti - nint(ti/time_write)*time_write
         if (mod .eq. 0) write(10, '(f10.3,e15.6)') ti, tmp_r1
     end do
@@ -369,7 +402,7 @@ program main
     open(10, file='stats_E.dat')
     do i = 0, n_steps
         ti = i * dt
-        tmp_r1 = REAL(trace(matmul(HS, rho(i,:,:))), kind=DP)
+        tmp_r1 = REAL(energy(i), kind=DP)
         tmp_r2 = REAL(trace(matmul(HS, matmul(HS, rho(i,:,:)))), kind=DP)
         tmp_r3 = REAL(SQRT(tmp_r2 - tmp_r1**2), kind=DP)
         mod = ti - nint(ti/time_write)*time_write
@@ -385,6 +418,24 @@ program main
         tmp_r3 = REAL(SQRT(tmp_r2 - tmp_r1**2), kind=DP)
         mod = ti - nint(ti/time_write)*time_write
         if (mod .eq. 0) write(10, '(f10.3,2(e15.6))') ti, tmp_r1, tmp_r3
+    end do
+    close(10)
+
+    open(10, file='heat.dat')
+    do i = 0, n_steps
+        ti = i * dt
+        tmp_r1 = REAL(heat(i), kind=DP)
+        mod = ti - nint(ti/time_write)*time_write
+        if (mod .eq. 0) write(10, '(f10.3,e15.6)') ti, tmp_r1
+    end do
+    close(10)
+
+    open(10, file='sprod.dat')
+    do i = 0, n_steps
+        ti = i * dt
+        tmp_r1 = REAL(sprod(i), kind=DP)
+        mod = ti - nint(ti/time_write)*time_write
+        if (mod .eq. 0) write(10, '(f10.3,e15.6)') ti, tmp_r1
     end do
     close(10)
 
