@@ -24,7 +24,7 @@ main.o: main.f95
 	${FC} ${OPTS} -c main.f95
 
 Redfield1B: main.o constants.o variables.o helper.o bath.o
-	${FC} ${OPTS} ${LIBS} -o Redfield1B main.o constants.o variables.o helper.o bath.o
+	${FC} ${OPTS} -o Redfield1B main.o constants.o variables.o helper.o bath.o ${LIBS}
 
 clean:
 	rm -rf *.o *.mod Redfield1B *.dat *.out
