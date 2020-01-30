@@ -90,6 +90,109 @@ contains
          C = matmul(tmp_i2s1, matmul(B, tmp_i2s2))
       end subroutine I2S
 
+      ! Returns the inverse of a matrix calculated by finding the LU
+      ! decomposition.  Depends on LAPACK.
+      subroutine matinv(A, Ainv)
+         complex(kind=DP), dimension(:,:), intent(in) :: A
+         complex(kind=DP), dimension(size(A,1),size(A,2)) :: Ainv
+
+         real(dp), dimension(size(A,1)) :: work  ! work array for LAPACK
+         integer, dimension(size(A,1)) :: ipiv   ! pivot indices
+         integer :: n, info
+
+         ! External procedures defined in LAPACK
+         external ZGETRF
+         external ZGETRI
+
+         ! Store A in Ainv to prevent it from being overwritten by LAPACK
+         Ainv = A
+         n = size(A,1)
+
+         ! DGETRF computes an LU factorization of a general M-by-N matrix A
+         ! using partial pivoting with row interchanges.
+         call ZGETRF(n, n, Ainv, n, ipiv, info)
+
+         if (info /= 0) then
+            stop 'Matrix is numerically singular!'
+         end if
+
+         ! DGETRI computes the inverse of a matrix using the LU factorization
+         ! computed by DGETRF.
+         call ZGETRI(n, Ainv, n, ipiv, work, n, info)
+
+         if (info /= 0) then
+            stop 'Matrix inversion failed!'
+         end if
+      end subroutine matinv
+
+      subroutine matinv2(A,B)
+         !! Performs a direct calculation of the inverse of a 2×2 matrix.
+         complex(kind=DP), intent(in) :: A(2,2)   !! Matrix
+         complex(kind=DP)             :: B(2,2)   !! Inverse matrix
+         complex(kind=DP)             :: detinv
+
+         ! Calculate the inverse determinant of the matrix
+         detinv = 1/(A(1,1)*A(2,2) - A(1,2)*A(2,1))
+
+         ! Calculate the inverse of the matrix
+         B(1,1) = +detinv * A(2,2)
+         B(2,1) = -detinv * A(2,1)
+         B(1,2) = -detinv * A(1,2)
+         B(2,2) = +detinv * A(1,1)
+      end subroutine matinv2
+
+      subroutine matinv4(A,B)
+         !! Performs a direct calculation of the inverse of a 4×4 matrix.
+         complex(kind=DP), intent(in) :: A(4,4)   !! Matrix
+         complex(kind=DP)             :: B(4,4)   !! Inverse matrix
+         complex(kind=DP)             :: detinv
+
+         ! Calculate the inverse determinant of the matrix
+         detinv = &
+            1/(A(1,1)*(A(2,2)*(A(3,3)*A(4,4)-A(3,4)*A(4,3))+A(2,3)*(A(3,4)*A(4,2)&
+            -A(3,2)*A(4,4))+A(2,4)*(A(3,2)*A(4,3)-A(3,3)*A(4,2)))&
+            -A(1,2)*(A(2,1)*(A(3,3)*A(4,4)-A(3,4)*A(4,3))+A(2,3)*(A(3,4)*A(4,1)&
+            -A(3,1)*A(4,4))+A(2,4)*(A(3,1)*A(4,3)-A(3,3)*A(4,1)))&
+            +A(1,3)*(A(2,1)*(A(3,2)*A(4,4)-A(3,4)*A(4,2))+A(2,2)*(A(3,4)*A(4,1)&
+            -A(3,1)*A(4,4))+A(2,4)*(A(3,1)*A(4,2)-A(3,2)*A(4,1)))-A(1,4)*(A(2,1)&
+            *(A(3,2)*A(4,3)-A(3,3)*A(4,2))+A(2,2)*(A(3,3)*A(4,1)-A(3,1)*A(4,3))&
+            +A(2,3)*(A(3,1)*A(4,2)-A(3,2)*A(4,1))))
+
+         ! Calculate the inverse of the matrix
+         B(1,1) = detinv*(A(2,2)*(A(3,3)*A(4,4)-A(3,4)*A(4,3))+A(2,3)*(A(3,4)*&
+            A(4,2)-A(3,2)*A(4,4))+A(2,4)*(A(3,2)*A(4,3)-A(3,3)*A(4,2)))
+         B(2,1) = detinv*(A(2,1)*(A(3,4)*A(4,3)-A(3,3)*A(4,4))+A(2,3)*(A(3,1)*&
+            A(4,4)-A(3,4)*A(4,1))+A(2,4)*(A(3,3)*A(4,1)-A(3,1)*A(4,3)))
+         B(3,1) = detinv*(A(2,1)*(A(3,2)*A(4,4)-A(3,4)*A(4,2))+A(2,2)*(A(3,4)*&
+            A(4,1)-A(3,1)*A(4,4))+A(2,4)*(A(3,1)*A(4,2)-A(3,2)*A(4,1)))
+         B(4,1) = detinv*(A(2,1)*(A(3,3)*A(4,2)-A(3,2)*A(4,3))+A(2,2)*(A(3,1)*&
+            A(4,3)-A(3,3)*A(4,1))+A(2,3)*(A(3,2)*A(4,1)-A(3,1)*A(4,2)))
+         B(1,2) = detinv*(A(1,2)*(A(3,4)*A(4,3)-A(3,3)*A(4,4))+A(1,3)*(A(3,2)*&
+            A(4,4)-A(3,4)*A(4,2))+A(1,4)*(A(3,3)*A(4,2)-A(3,2)*A(4,3)))
+         B(2,2) = detinv*(A(1,1)*(A(3,3)*A(4,4)-A(3,4)*A(4,3))+A(1,3)*(A(3,4)*&
+            A(4,1)-A(3,1)*A(4,4))+A(1,4)*(A(3,1)*A(4,3)-A(3,3)*A(4,1)))
+         B(3,2) = detinv*(A(1,1)*(A(3,4)*A(4,2)-A(3,2)*A(4,4))+A(1,2)*(A(3,1)*&
+            A(4,4)-A(3,4)*A(4,1))+A(1,4)*(A(3,2)*A(4,1)-A(3,1)*A(4,2)))
+         B(4,2) = detinv*(A(1,1)*(A(3,2)*A(4,3)-A(3,3)*A(4,2))+A(1,2)*(A(3,3)*&
+            A(4,1)-A(3,1)*A(4,3))+A(1,3)*(A(3,1)*A(4,2)-A(3,2)*A(4,1)))
+         B(1,3) = detinv*(A(1,2)*(A(2,3)*A(4,4)-A(2,4)*A(4,3))+A(1,3)*(A(2,4)*&
+            A(4,2)-A(2,2)*A(4,4))+A(1,4)*(A(2,2)*A(4,3)-A(2,3)*A(4,2)))
+         B(2,3) = detinv*(A(1,1)*(A(2,4)*A(4,3)-A(2,3)*A(4,4))+A(1,3)*(A(2,1)*&
+            A(4,4)-A(2,4)*A(4,1))+A(1,4)*(A(2,3)*A(4,1)-A(2,1)*A(4,3)))
+         B(3,3) = detinv*(A(1,1)*(A(2,2)*A(4,4)-A(2,4)*A(4,2))+A(1,2)*(A(2,4)*&
+            A(4,1)-A(2,1)*A(4,4))+A(1,4)*(A(2,1)*A(4,2)-A(2,2)*A(4,1)))
+         B(4,3) = detinv*(A(1,1)*(A(2,3)*A(4,2)-A(2,2)*A(4,3))+A(1,2)*(A(2,1)*&
+            A(4,3)-A(2,3)*A(4,1))+A(1,3)*(A(2,2)*A(4,1)-A(2,1)*A(4,2)))
+         B(1,4) = detinv*(A(1,2)*(A(2,4)*A(3,3)-A(2,3)*A(3,4))+A(1,3)*(A(2,2)*&
+            A(3,4)-A(2,4)*A(3,2))+A(1,4)*(A(2,3)*A(3,2)-A(2,2)*A(3,3)))
+         B(2,4) = detinv*(A(1,1)*(A(2,3)*A(3,4)-A(2,4)*A(3,3))+A(1,3)*(A(2,4)*&
+            A(3,1)-A(2,1)*A(3,4))+A(1,4)*(A(2,1)*A(3,3)-A(2,3)*A(3,1)))
+         B(3,4) = detinv*(A(1,1)*(A(2,4)*A(3,2)-A(2,2)*A(3,4))+A(1,2)*(A(2,1)*&
+            A(3,4)-A(2,4)*A(3,1))+A(1,4)*(A(2,2)*A(3,1)-A(2,1)*A(3,2)))
+         B(4,4) = detinv*(A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2))+A(1,2)*(A(2,3)*&
+            A(3,1)-A(2,1)*A(3,3))+A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1)))
+      end subroutine matinv4
+
       ! Right now, this only works for a four dimensional Hilbert space
       ! that we want to decompose into two two-dimensional Hilbert spaces.
       subroutine rhoA(A, B)

@@ -8,7 +8,7 @@ program main
    implicit none
 
    character(len=40) :: filename, arg, hostname
-   complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI, bath_VI_half, eta
+   complex(kind=DP), dimension(:,:,:), allocatable :: rho, bath_VI, bath_VI_half, eta, rho_E
    integer :: n_arg, i, j, k, iargc
    logical :: tmp_l1, halt, found_herm, found_trace, found_pos
    logical :: gibbs, random, normalize
@@ -19,8 +19,9 @@ program main
    complex(kind=DP) :: tmp_c1, tmp_c2
    complex(kind=DP), dimension(:), allocatable :: sys_entropy, energy, heat, sprod
    complex(kind=DP), dimension(:), allocatable :: traced, fid
-   complex(kind=DP), dimension(:,:), allocatable :: gibbsrho
-   complex(kind=DP), dimension(2,2) :: rho_A, rho_B
+   complex(kind=DP), dimension(:,:), allocatable :: gibbsrho, eigvect_inv
+   complex(kind=DP), dimension(2,2) :: rho_A, rho_B, rho_AE, rho_BE, eigvect_inv2
+   complex(kind=DP), dimension(4,4) :: eigvect_inv4
 
    namelist/params/dt,time_limit,time_write,pade,matsu,temp,gamma,lambda,rho0,HS,VI
 
@@ -124,6 +125,7 @@ program main
    ! Initialize the multi time-step arrays
    allocate(rho(0:n_steps,ss,ss))
    rho(0,:,:) = rho0 ! Initialize the storage
+   allocate(rho_E(0:n_steps,ss,ss))
    allocate(bath_VI(0:n_steps,ss,ss))
    allocate(bath_VI_half(n_steps,ss,ss))
    allocate(sys_entropy(0:n_steps))
@@ -134,6 +136,7 @@ program main
    allocate(traced(0:n_steps))
    allocate(fid(0:n_steps))
    allocate(gibbsrho(ss,ss))
+   allocate(eigvect_inv(ss,ss))
 
    ! Calculate gibbs state
    gibbsrho = 0
@@ -359,6 +362,26 @@ program main
       traced(i) = trace_distance(rho(i,:,:),gibbsrho)
    end do
 
+   ! Calculate system density in the energy eigenbasis
+
+   call eigensystem(HS, eigval, eigvect)
+   if (ss .eq. 2) then
+      call matinv2(eigvect, eigvect_inv2)
+      do i = 0, n_steps
+         rho_E(i,:,:) = matmul(eigvect_inv2, matmul(rho(i,:,:), eigvect))
+      end do
+   else if (ss .eq. 4) then
+      call matinv4(eigvect, eigvect_inv4)
+      do i = 0, n_steps
+         rho_E(i,:,:) = matmul(eigvect_inv4, matmul(rho(i,:,:), eigvect))
+      end do
+   else
+      call matinv(eigvect, eigvect_inv)
+      do i = 0, n_steps
+         rho_E(i,:,:) = matmul(eigvect_inv, matmul(rho(i,:,:), eigvect))
+      end do
+   end if
+
    call CPU_TIME(cputime1)
 
    open(10,file='rho.dat')
@@ -366,6 +389,14 @@ program main
       ti = i * dt
       mod = ti - nint(ti/time_write)*time_write
       if (mod .eq. 0) write(10,'(f10.3,('//form_str2//'e15.6))') ti,((rho(i,j,k),j=1,ss),k=1,ss)
+   end do
+   close(10)
+
+   open(10,file='rho_E.dat')
+   do i = 0, n_steps
+      ti = i * dt
+      mod = ti - nint(ti/time_write)*time_write
+      if (mod .eq. 0) write(10,'(f10.3,('//form_str2//'e15.6))') ti,((rho_E(i,j,k),j=1,ss),k=1,ss)
    end do
    close(10)
 
@@ -497,7 +528,7 @@ program main
          ti = i * dt
          call rhoA(rho(i,:,:), rho_A)
          mod = ti - nint(ti/time_write)*time_write
-         if (mod .eq. 0) write(10,'(4(a,f10.7,a,f10.7,a))') (('(',REAL(rho_A(k,j)),',',AIMAG(rho_A(k,j)),'),',k=1,2),j=1,2)
+         if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_A(k,j),k=1,2),j=1,2)
       end do
       close(10)
 
@@ -506,7 +537,25 @@ program main
          ti = i * dt
          call rhoB(rho(i,:,:), rho_B)
          mod = ti - nint(ti/time_write)*time_write
-         if (mod .eq. 0) write(10,'(4(a,f10.7,a,f10.7,a))') (('(',REAL(rho_B(k,j)),',',AIMAG(rho_B(k,j)),'),',k=1,2),j=1,2)
+         if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_B(k,j),k=1,2),j=1,2)
+      end do
+      close(10)
+
+      open(10, file='rhoA_E.dat')
+      do i = 0, n_steps
+         ti = i * dt
+         call rhoA(rho_E(i,:,:), rho_AE)
+         mod = ti - nint(ti/time_write)*time_write
+         if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_AE(k,j),k=1,2),j=1,2)
+      end do
+      close(10)
+
+      open(10, file='rhoB_E.dat')
+      do i = 0, n_steps
+         ti = i * dt
+         call rhoB(rho_E(i,:,:), rho_BE)
+         mod = ti - nint(ti/time_write)*time_write
+         if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_BE(k,j),k=1,2),j=1,2)
       end do
       close(10)
    end if
@@ -548,6 +597,12 @@ program main
       end do
    end if
 
+   write(20,'(/a)') 'The final density in the energy eigenbasis is'
+   tmp_arr1 = rho_E(n_steps,:,:)
+   do i=1,ss
+      write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',REAL(tmp_arr1(i,j)),',',AIMAG(tmp_arr1(i,j)),'),',j=1,ss)
+   end do
+
    if (ss .eq. 4) then
       write(20,'(/a)') 'The reduced density for system A is'
       write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_A(1,j)),',',AIMAG(rho_A(1,j)),'),',j=1,2)
@@ -555,6 +610,12 @@ program main
       write(20,'(/a)') 'The reduced density for system B is'
       write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_B(1,j)),',',AIMAG(rho_B(1,j)),'),',j=1,2)
       write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_B(2,j)),',',AIMAG(rho_B(2,j)),'),',j=1,2)
+      write(20,'(/a)') 'The reduced density for system A in the energy eigenbasis is'
+      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_AE(1,j)),',',AIMAG(rho_AE(1,j)),'),',j=1,2)
+      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_AE(2,j)),',',AIMAG(rho_AE(2,j)),'),',j=1,2)
+      write(20,'(/a)') 'The reduced density for system B in the energy eigenbasis is'
+      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_BE(1,j)),',',AIMAG(rho_BE(1,j)),'),',j=1,2)
+      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_BE(2,j)),',',AIMAG(rho_BE(2,j)),'),',j=1,2)
    end if
 
    write(20, '(/a)') 'Other Information'
