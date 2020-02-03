@@ -91,7 +91,7 @@ program main
 
    if (gibbs) then ! Generate Gibbs state
       rho0 = 0
-      call eigensystem(rho0, eigval, eigvect)
+      call eigensystem(HS, eigval, eigvect)
       do k=1, ss
          do i=1, ss
             do j=1, ss
@@ -300,25 +300,25 @@ program main
 
       tc = ti
       tmp_arr1 = rho(i,:,:)
-      tmp_arr2 = bath_VI(i,:,:)
+      tmp_arr2 = bath_VI(n_steps,:,:)
       tmp_arr3 = matmul(tmp_arr2, tmp_arr1) - matmul(tmp_arr1, transpose(conjg(tmp_arr2)))
       k1 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
       tc = ti + dt / 2
       tmp_arr1 = rho(i,:,:) + k1 * dt / 2
-      tmp_arr2 = bath_VI_half(i+1,:,:)
+      tmp_arr2 = bath_VI(n_steps,:,:)
       tmp_arr3 = matmul(tmp_arr2, tmp_arr1) - matmul(tmp_arr1, transpose(conjg(tmp_arr2)))
       k2 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
       tc = ti + dt / 2
       tmp_arr1 = rho(i,:,:) + k2 * dt / 2
-      tmp_arr2 = bath_VI_half(i+1,:,:)
+      tmp_arr2 = bath_VI(n_steps,:,:)
       tmp_arr3 = matmul(tmp_arr2, tmp_arr1) - matmul(tmp_arr1, transpose(conjg(tmp_arr2)))
       k3 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
       tc = ti + dt
       tmp_arr1 = rho(i,:,:) + k3 * dt
-      tmp_arr2 = bath_VI(i+1,:,:)
+      tmp_arr2 = bath_VI(n_steps,:,:)
       tmp_arr3 = matmul(tmp_arr2, tmp_arr1) - matmul(tmp_arr1, transpose(conjg(tmp_arr2)))
       k4 = -CMPLX(0,1)*(matmul(HS,tmp_arr1)-matmul(tmp_arr1,HS)) - (matmul(VI,tmp_arr3)-matmul(tmp_arr3,VI))
 
