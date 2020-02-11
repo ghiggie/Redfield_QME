@@ -15,7 +15,7 @@ program main
    real(kind=DP) :: ti, tc, tmp_r1, tmp_r2, tmp_r3, mod
    complex(kind=DP) :: Z
    real :: cputime0, cputime1, cputime2
-   character(len=4) :: tmp_str, form_str1, form_str2
+   character(len=10) :: tmp_str1, tmp_str2, form_str1, form_str2
    complex(kind=DP) :: tmp_c1, tmp_c2
    complex(kind=DP), dimension(:), allocatable :: sys_entropy, energy, heat, sprod
    complex(kind=DP), dimension(:), allocatable :: traced, fid
@@ -276,12 +276,19 @@ program main
       write(20,'(a,f10.7,a,f10.7,a)') 'c1 = (',REAL(coeff(1)),',',AIMAG(coeff(1)),')'
       write(20,'(a,f10.7)') 'gamma1 = ', abs(exp_vec(1))
    else
-      write(tmp_str, '(I2)') matsu
-      write(20,'(2a/)') trim(adjustl(tmp_str)), ' matsubara freaquencies are used.'
-      write(20,'(a,f10.7,a,f10.7,a)') 'cinf = (', REAL(cinf), ',',AIMAG(cinf),')'
-      do i = 0, matsu
-         write(20,'(a,I1,a,f10.7,a,f10.7,a)') 'c',i,' = (',REAL(coeff(i)),',',AIMAG(coeff(i)),')'
-         write(20, '(a,I1,a,f10.7)') 'gamma',i,' = ', abs(exp_vec(i))
+      write(tmp_str1, '(I3)') matsu
+      write(20,'(2a/)') trim(adjustl(tmp_str1)), ' matsubara freaquencies are used.'
+      write(tmp_str1, '(E10.3)') REAL(cinf)
+      write(20,'(2a)') 'cinf    = ', trim(adjustl(tmp_str1))
+      write(20,'(a,E10.3,a,E10.3,a)') 'c0      = (',REAL(coeff(0)),',',AIMAG(coeff(0)),')'
+      write(tmp_str1, '(f10.7)') abs(exp_vec(0))
+      write(20, '(2a)') 'gamma0  = ', trim(adjustl(tmp_str1))
+      do i = 1, matsu
+         write(tmp_str1, '(I3)') i
+         write(tmp_str2, '(E10.3)') REAL(coeff(i))
+         write(20,'(4a)') 'c',trim(adjustl(tmp_str1)),'      = ', trim(adjustl(tmp_str2))
+         write(tmp_str2, '(f10.7)') abs(exp_vec(i))
+         write(20, '(4a)') 'gamma',trim(adjustl(tmp_str1)),'  = ', trim(adjustl(tmp_str2))
       end do
    end if
 
@@ -522,43 +529,43 @@ program main
    end do
    close(10)
 
-   if (ss .eq. 4) then
-      open(10, file='rhoA.dat')
-      do i = 0, n_steps
-         ti = i * dt
-         call rhoA(rho(i,:,:), rho_A)
-         mod = ti - nint(ti/time_write)*time_write
-         if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_A(k,j),k=1,2),j=1,2)
-      end do
-      close(10)
-
-      open(10, file='rhoB.dat')
-      do i = 0, n_steps
-         ti = i * dt
-         call rhoB(rho(i,:,:), rho_B)
-         mod = ti - nint(ti/time_write)*time_write
-         if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_B(k,j),k=1,2),j=1,2)
-      end do
-      close(10)
-
-      open(10, file='rhoA_E.dat')
-      do i = 0, n_steps
-         ti = i * dt
-         call rhoA(rho_E(i,:,:), rho_AE)
-         mod = ti - nint(ti/time_write)*time_write
-         if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_AE(k,j),k=1,2),j=1,2)
-      end do
-      close(10)
-
-      open(10, file='rhoB_E.dat')
-      do i = 0, n_steps
-         ti = i * dt
-         call rhoB(rho_E(i,:,:), rho_BE)
-         mod = ti - nint(ti/time_write)*time_write
-         if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_BE(k,j),k=1,2),j=1,2)
-      end do
-      close(10)
-   end if
+   ! if (ss .eq. 4) then
+   !    open(10, file='rhoA.dat')
+   !    do i = 0, n_steps
+   !       ti = i * dt
+   !       call rhoA(rho(i,:,:), rho_A)
+   !       mod = ti - nint(ti/time_write)*time_write
+   !       if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_A(k,j),k=1,2),j=1,2)
+   !    end do
+   !    close(10)
+   !
+   !    open(10, file='rhoB.dat')
+   !    do i = 0, n_steps
+   !       ti = i * dt
+   !       call rhoB(rho(i,:,:), rho_B)
+   !       mod = ti - nint(ti/time_write)*time_write
+   !       if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_B(k,j),k=1,2),j=1,2)
+   !    end do
+   !    close(10)
+   !
+   !    open(10, file='rhoA_E.dat')
+   !    do i = 0, n_steps
+   !       ti = i * dt
+   !       call rhoA(rho_E(i,:,:), rho_AE)
+   !       mod = ti - nint(ti/time_write)*time_write
+   !       if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_AE(k,j),k=1,2),j=1,2)
+   !    end do
+   !    close(10)
+   !
+   !    open(10, file='rhoB_E.dat')
+   !    do i = 0, n_steps
+   !       ti = i * dt
+   !       call rhoB(rho_E(i,:,:), rho_BE)
+   !       mod = ti - nint(ti/time_write)*time_write
+   !       if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_BE(k,j),k=1,2),j=1,2)
+   !    end do
+   !    close(10)
+   ! end if
 
    call CPU_TIME(cputime2)
 
@@ -603,20 +610,20 @@ program main
       write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',REAL(tmp_arr1(i,j)),',',AIMAG(tmp_arr1(i,j)),'),',j=1,ss)
    end do
 
-   if (ss .eq. 4) then
-      write(20,'(/a)') 'The reduced density for system A is'
-      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_A(1,j)),',',AIMAG(rho_A(1,j)),'),',j=1,2)
-      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_A(2,j)),',',AIMAG(rho_A(2,j)),'),',j=1,2)
-      write(20,'(/a)') 'The reduced density for system B is'
-      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_B(1,j)),',',AIMAG(rho_B(1,j)),'),',j=1,2)
-      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_B(2,j)),',',AIMAG(rho_B(2,j)),'),',j=1,2)
-      write(20,'(/a)') 'The reduced density for system A in the energy eigenbasis is'
-      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_AE(1,j)),',',AIMAG(rho_AE(1,j)),'),',j=1,2)
-      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_AE(2,j)),',',AIMAG(rho_AE(2,j)),'),',j=1,2)
-      write(20,'(/a)') 'The reduced density for system B in the energy eigenbasis is'
-      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_BE(1,j)),',',AIMAG(rho_BE(1,j)),'),',j=1,2)
-      write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_BE(2,j)),',',AIMAG(rho_BE(2,j)),'),',j=1,2)
-   end if
+   ! if (ss .eq. 4) then
+   !    write(20,'(/a)') 'The reduced density for system A is'
+   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_A(1,j)),',',AIMAG(rho_A(1,j)),'),',j=1,2)
+   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_A(2,j)),',',AIMAG(rho_A(2,j)),'),',j=1,2)
+   !    write(20,'(/a)') 'The reduced density for system B is'
+   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_B(1,j)),',',AIMAG(rho_B(1,j)),'),',j=1,2)
+   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_B(2,j)),',',AIMAG(rho_B(2,j)),'),',j=1,2)
+   !    write(20,'(/a)') 'The reduced density for system A in the energy eigenbasis is'
+   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_AE(1,j)),',',AIMAG(rho_AE(1,j)),'),',j=1,2)
+   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_AE(2,j)),',',AIMAG(rho_AE(2,j)),'),',j=1,2)
+   !    write(20,'(/a)') 'The reduced density for system B in the energy eigenbasis is'
+   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_BE(1,j)),',',AIMAG(rho_BE(1,j)),'),',j=1,2)
+   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_BE(2,j)),',',AIMAG(rho_BE(2,j)),'),',j=1,2)
+   ! end if
 
    write(20, '(/a)') 'Other Information'
    write(20, '(a/)') '================='

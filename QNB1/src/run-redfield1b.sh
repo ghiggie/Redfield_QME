@@ -3,7 +3,7 @@
 # Name of the executable
 EXE="Redfield1B"
 # Size of the Hilbert space
-N="2"
+N="4"
 # Name of the parameter file
 PAR="params${N}.template"
 # Execution options
@@ -14,10 +14,10 @@ T=2000
 temp=1.0
 gamma=`echo "0.1*$temp" | bc`
 # Number of Matsubara terms
-mat=1
+mat=5
 # Coupling strength between system and environment
-LI=0.00
-LF=0.00
+LI=0.01
+LF=0.01
 DL=0.01
 # Coupling strength between atoms
 KI=0.00
