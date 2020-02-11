@@ -41,9 +41,8 @@ program main
             write(*,*) 'Redfield with one bath: ', trim(version)
             STOP ''
          case('-h')
-            write(*,*) ' Usage: ./Redfield1B [-h] [-v] [-G|-R] [-N] system_size config_file'
+            write(*,*) ' Usage: ./Redfield1B [-h] [-v] [-G|-R] [-N] config_file'
             write(*,*) ' Required Parameters:'
-            write(*,*) '    system_size: size of the system Hilbert space'
             write(*,*) '    config_file: parameter values in namelist format'
             write(*,*) ' Optional Parameters:'
             write(*,*) '    -h: show this usage information'
@@ -59,26 +58,25 @@ program main
          case('-N')
             normalize = .true.
          case default
-            if (i .eq. n_arg - 1) then
-               read(arg,*) ss
-            else if (i .eq. n_arg) then
-               filename = trim(arg)
-            end if
+            filename = trim(arg)
          end select
       end do
    else
-      write(*,*) ' System size and configuration file are required.'
-      write(*,*) ' Usage: ./Redfield1B [-h] [-v] [-G|-R] [-N] system_size config_file'
+      write(*,*) ' Configuration file is required.'
+      write(*,*) ' Usage: ./Redfield1B [-h] [-v] [-G|-R] [-N] config_file'
       write(*,*) ' Type ./Redfield1B -h for full usage information.'
       STOP ''
    end if
 
    if (gibbs .and. random) then
       write(*,*) 'You cannot use -G and -R simultaneously.'
-      write(*,*) ' Usage: ./Redfield1B [-h] [-v] [-G|-R] [-N] system_size config_file'
+      write(*,*) ' Usage: ./Redfield1B [-h] [-v] [-G|-R] [-N] config_file'
       write(*,*) ' Type ./Redfield1B -h for full usage information.'
       STOP ''
    end if
+
+   ! Set the system size to be ss=4
+   ss = 4
 
    ! Initialize the single time-step arrays
    call array_init()
@@ -160,6 +158,8 @@ program main
 
    open(20, file = 'Redfield1B.out')
    write(20, '(3a)') '*** Redfield with One Bath (Redfield1B) ', trim(version), ' ***'
+
+   write(20, '(/a)') ' Unless otherwise indicated, all matrices are in the atomic basis.'
 
    write(20, '(/a,a)') 'Job begun at ', time_stamp()
    call get_environment_variable('HOSTNAME', hostname)
@@ -277,7 +277,7 @@ program main
       write(20,'(a,f10.7)') 'gamma1 = ', abs(exp_vec(1))
    else
       write(tmp_str1, '(I3)') matsu
-      write(20,'(2a/)') trim(adjustl(tmp_str1)), ' matsubara freaquencies are used.'
+      write(20,'(2a/)') trim(adjustl(tmp_str1)), ' matsubara frequencies are used.'
       write(tmp_str1, '(E10.3)') REAL(cinf)
       write(20,'(2a)') 'cinf    = ', trim(adjustl(tmp_str1))
       write(20,'(a,E10.3,a,E10.3,a)') 'c0      = (',REAL(coeff(0)),',',AIMAG(coeff(0)),')'
