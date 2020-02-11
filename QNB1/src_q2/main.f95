@@ -20,7 +20,9 @@ program main
    complex(kind=DP), dimension(:), allocatable :: sys_entropy, energy, heat, sprod
    complex(kind=DP), dimension(:), allocatable :: traced, fid
    complex(kind=DP), dimension(:,:), allocatable :: gibbsrho, eigvect_inv
-   complex(kind=DP), dimension(2,2) :: rho_A, rho_B, rho_AE, rho_BE, eigvect_inv2
+   complex(kind=DP), dimension(2,2) :: rho_A, rho_B, rho_AE, rho_BE, eigvect_inv2, rho_gibbs2
+   complex(kind=DP), dimension(2,2) :: HS_2, eigvect_2
+   real(kind=DP), dimension(2) :: eigval_2
    complex(kind=DP), dimension(4,4) :: eigvect_inv4
 
    namelist/params/dt,time_limit,time_write,pade,matsu,temp,gamma,lambda,rho0,HS,VI
@@ -159,7 +161,7 @@ program main
    open(20, file = 'Redfield1B.out')
    write(20, '(3a)') '*** Redfield with One Bath (Redfield1B) ', trim(version), ' ***'
 
-   write(20, '(/a)') ' Unless otherwise indicated, all matrices are in the atomic basis.'
+   write(20, '(/a)') 'Unless otherwise indicated, all matrices are in the atomic basis.'
 
    write(20, '(/a,a)') 'Job begun at ', time_stamp()
    call get_environment_variable('HOSTNAME', hostname)
@@ -372,22 +374,10 @@ program main
    ! Calculate system density in the energy eigenbasis
 
    call eigensystem(HS, eigval, eigvect)
-   if (ss .eq. 2) then
-      call matinv2(eigvect, eigvect_inv2)
-      do i = 0, n_steps
-         rho_E(i,:,:) = matmul(eigvect_inv2, matmul(rho(i,:,:), eigvect))
-      end do
-   else if (ss .eq. 4) then
-      call matinv4(eigvect, eigvect_inv4)
-      do i = 0, n_steps
-         rho_E(i,:,:) = matmul(eigvect_inv4, matmul(rho(i,:,:), eigvect))
-      end do
-   else
-      call matinv(eigvect, eigvect_inv)
-      do i = 0, n_steps
-         rho_E(i,:,:) = matmul(eigvect_inv, matmul(rho(i,:,:), eigvect))
-      end do
-   end if
+   call matinv4(eigvect, eigvect_inv4)
+   do i = 0, n_steps
+      rho_E(i,:,:) = matmul(eigvect_inv4, matmul(rho(i,:,:), eigvect))
+   end do
 
    call CPU_TIME(cputime1)
 
@@ -529,43 +519,61 @@ program main
    end do
    close(10)
 
-   ! if (ss .eq. 4) then
-   !    open(10, file='rhoA.dat')
-   !    do i = 0, n_steps
-   !       ti = i * dt
-   !       call rhoA(rho(i,:,:), rho_A)
-   !       mod = ti - nint(ti/time_write)*time_write
-   !       if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_A(k,j),k=1,2),j=1,2)
-   !    end do
-   !    close(10)
-   !
-   !    open(10, file='rhoB.dat')
-   !    do i = 0, n_steps
-   !       ti = i * dt
-   !       call rhoB(rho(i,:,:), rho_B)
-   !       mod = ti - nint(ti/time_write)*time_write
-   !       if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_B(k,j),k=1,2),j=1,2)
-   !    end do
-   !    close(10)
-   !
-   !    open(10, file='rhoA_E.dat')
-   !    do i = 0, n_steps
-   !       ti = i * dt
-   !       call rhoA(rho_E(i,:,:), rho_AE)
-   !       mod = ti - nint(ti/time_write)*time_write
-   !       if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_AE(k,j),k=1,2),j=1,2)
-   !    end do
-   !    close(10)
-   !
-   !    open(10, file='rhoB_E.dat')
-   !    do i = 0, n_steps
-   !       ti = i * dt
-   !       call rhoB(rho_E(i,:,:), rho_BE)
-   !       mod = ti - nint(ti/time_write)*time_write
-   !       if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_BE(k,j),k=1,2),j=1,2)
-   !    end do
-   !    close(10)
-   ! end if
+   open(10, file='rhoA.dat')
+   do i = 0, n_steps
+      ti = i * dt
+      call rhoA(rho(i,:,:), rho_A)
+      mod = ti - nint(ti/time_write)*time_write
+      if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_A(k,j),k=1,2),j=1,2)
+   end do
+   close(10)
+
+   open(10, file='rhoB.dat')
+   do i = 0, n_steps
+      ti = i * dt
+      call rhoB(rho(i,:,:), rho_B)
+      mod = ti - nint(ti/time_write)*time_write
+      if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_B(k,j),k=1,2),j=1,2)
+   end do
+   close(10)
+
+   ! First, calculate Gibbs state for the single qubit Hamiltonian
+
+   HS_2(1,:) = (/CMPLX(0.5,0.), CMPLX(0.,0.)/)
+   HS_2(2,:) = (/CMPLX(0.,0.), CMPLX(-0.5,0.)/)
+
+   call eigensystem(HS_2, eigval_2, eigvect_2)
+   call matinv2(eigvect_2, eigvect_inv2)
+   do k=1, 2
+      do i=1, 2
+         do j=1, 2
+            rho_gibbs2(i,j) = rho_gibbs2(i,j) + eigvect_2(i,k)*conjg(eigvect_2(j,k))*exp(-eigval_2(k)/temp)
+         end do
+      end do
+   end do
+   Z = trace(rho_gibbs2)
+   rho_gibbs2 = rho_gibbs2 / Z
+
+   open(10, file='rhoA_E.dat')
+   do i = 0, n_steps
+      ti = i * dt
+      call rhoA(rho(i,:,:), rho_A)
+      ! Now convert rho_A to energy eigenbasis and store in rho_AE
+      rho_AE = matmul(eigvect_inv2, matmul(rho_A, eigvect_2))
+      mod = ti - nint(ti/time_write)*time_write
+      if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_AE(k,j),k=1,2),j=1,2)
+   end do
+   close(10)
+
+   open(10, file='rhoB_E.dat')
+   do i = 0, n_steps
+      ti = i * dt
+      call rhoB(rho(i,:,:), rho_B)
+      rho_BE = matmul(eigvect_inv2, matmul(rho_B, eigvect_2))
+      mod = ti - nint(ti/time_write)*time_write
+      if (mod .eq. 0) write(10,'(f10.3,8e15.6)') ti, ((rho_BE(k,j),k=1,2),j=1,2)
+   end do
+   close(10)
 
    call CPU_TIME(cputime2)
 
@@ -610,20 +618,21 @@ program main
       write(20,'('//form_str1//'(a,f10.7,a,f10.7,a))') ('(',REAL(tmp_arr1(i,j)),',',AIMAG(tmp_arr1(i,j)),'),',j=1,ss)
    end do
 
-   ! if (ss .eq. 4) then
-   !    write(20,'(/a)') 'The reduced density for system A is'
-   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_A(1,j)),',',AIMAG(rho_A(1,j)),'),',j=1,2)
-   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_A(2,j)),',',AIMAG(rho_A(2,j)),'),',j=1,2)
-   !    write(20,'(/a)') 'The reduced density for system B is'
-   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_B(1,j)),',',AIMAG(rho_B(1,j)),'),',j=1,2)
-   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_B(2,j)),',',AIMAG(rho_B(2,j)),'),',j=1,2)
-   !    write(20,'(/a)') 'The reduced density for system A in the energy eigenbasis is'
-   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_AE(1,j)),',',AIMAG(rho_AE(1,j)),'),',j=1,2)
-   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_AE(2,j)),',',AIMAG(rho_AE(2,j)),'),',j=1,2)
-   !    write(20,'(/a)') 'The reduced density for system B in the energy eigenbasis is'
-   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_BE(1,j)),',',AIMAG(rho_BE(1,j)),'),',j=1,2)
-   !    write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_BE(2,j)),',',AIMAG(rho_BE(2,j)),'),',j=1,2)
-   ! end if
+   write(20,'(/a)') 'The reduced density for system A is'
+   write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_A(1,j)),',',AIMAG(rho_A(1,j)),'),',j=1,2)
+   write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_A(2,j)),',',AIMAG(rho_A(2,j)),'),',j=1,2)
+   write(20,'(/a)') 'The reduced density for system B is'
+   write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_B(1,j)),',',AIMAG(rho_B(1,j)),'),',j=1,2)
+   write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_B(2,j)),',',AIMAG(rho_B(2,j)),'),',j=1,2)
+   write(20,'(/a)') 'The reduced density for system A in the energy eigenbasis is'
+   write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_AE(1,j)),',',AIMAG(rho_AE(1,j)),'),',j=1,2)
+   write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_AE(2,j)),',',AIMAG(rho_AE(2,j)),'),',j=1,2)
+   write(20,'(/a)') 'The reduced density for system B in the energy eigenbasis is'
+   write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_BE(1,j)),',',AIMAG(rho_BE(1,j)),'),',j=1,2)
+   write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_BE(2,j)),',',AIMAG(rho_BE(2,j)),'),',j=1,2)
+   write(20,'(/a)') 'The Gibbs state for the individual qubits is'
+   write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_gibbs2(1,j)),',',AIMAG(rho_gibbs2(1,j)),'),',j=1,2)
+   write(20,'(2(a,f10.7,a,f10.7,a))') ('(',REAL(rho_gibbs2(2,j)),',',AIMAG(rho_gibbs2(2,j)),'),',j=1,2)
 
    write(20, '(/a)') 'Other Information'
    write(20, '(a/)') '================='
