@@ -1,135 +1,163 @@
-module helper
+MODULE helper
 
-   use constants
-   use variables
-   implicit none
+   USE constants
+   USE variables
+
+   IMPLICIT NONE
 
    ! Work area for zheev
-   integer, save :: info, lwork
-   real(kind=DP), dimension(6) :: rwork
-   complex(kind=DP), dimension(1000) :: work
+   INTEGER,          SAVE            :: info, lwork
+   REAL   (KIND=DP), DIMENSION(6)    :: rwork
+   COMPLEX(KIND=DP), DIMENSION(1000) :: work
 
-contains
+CONTAINS
 
-      subroutine eigensystem(X,E,V)
+      SUBROUTINE eigensystem(X,E,V)
          ! X is the matrix we want the eigensystem of
          ! E will store the eigenvalues
          ! V will store the eigenvectors
 
-         complex(kind=DP), dimension(:,:), intent(in) :: X
-         real(kind=DP), dimension(:), intent(out) :: E
-         complex(kind=DP), dimension(:,:), intent(out) :: V
-         integer :: n
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(IN)  :: X
+         REAL   (KIND=DP), DIMENSION(:),   INTENT(OUT) :: E
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(OUT) :: V
+         INTEGER                                       :: n
 
-         n = size(X, dim=1)
+         n = SIZE(X, DIM=1)
          V = X
          lwork = -1
-         call ZHEEV('V','U',n,V,n,E,work,lwork,rwork,info)
-         lwork = min(1000, int(real(work(1))))
-         call ZHEEV('V','U',n,V,n,E,work,lwork,rwork,info)
-      end subroutine eigensystem
+         CALL ZHEEV('V','U',n,V,n,E,work,lwork,rwork,info)
+         lwork = MIN(1000, INT(REAL(work(1))))
+         CALL ZHEEV('V','U',n,V,n,E,work,lwork,rwork,info)
+      END SUBROUTINE eigensystem
 
-      function Entropy(A)
-         complex(kind=DP), dimension(:,:), intent(in) :: A
-         real(kind=DP) :: Entropy
+      FUNCTION Entropy(A)
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(IN) :: A
+         REAL   (KIND=DP)                             :: Entropy
 
-         call eigensystem(A, eigval, eigvect)
+         CALL eigensystem(A, eigval, eigvect)
 
-         Entropy = -SUM(eigval * LOG(eigval), mask=eigval>0.0_DP)
-      end function Entropy
+         Entropy = -SUM(eigval * LOG(eigval), MASK=eigval>0.0_DP)
+      END FUNCTION Entropy
 
-      function fidelity(A,B)
-         complex(kind=DP), dimension(:,:), intent(in) :: A, B
-         real(kind=DP) :: fidelity
+      FUNCTION fidelity(A,B)
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(IN) :: A, B
+         REAL   (KIND=DP)                             :: fidelity
 
-         integer :: i
+         INTEGER :: i
 
-         ! Compute sqrt(A)
-         call eigensystem(A, eigval, eigvect)
-         do i = 1, ss
-            diag(i,i) = sqrt(REAL(eigval(i), kind=DP))
-         end do
-         tmp_arr1 = conjg(transpose(eigvect))
-         tmp_arr1 = matmul(eigvect, matmul(diag, tmp_arr1)) ! sqrt(A)
+         diag = 0.0_DP
 
-         tmp_arr1 = matmul(tmp_arr1, matmul(B, tmp_arr1)) !sqrt(A)Bsqrt(A)
-         call eigensystem(tmp_arr1, eigval, eigvect)
-         do i = 1, ss
-            diag(i,i) = sqrt(REAL(eigval(i), kind=DP))
-         end do
-         tmp_arr1 = conjg(transpose(eigvect))
-         tmp_arr1 = matmul(eigvect, matmul(diag, tmp_arr1)) !sqrt(sqrt(A)Bsqrt(A))
+         ! Compute SQRT(A)
+         CALL eigensystem(A, eigval, eigvect)
+         DO i = 1, ss
+            diag(i,i) = DSQRT(REAL(eigval(i), KIND=DP))
+         END DO
+         tmp_arr1 = CONJG(TRANSPOSE(eigvect))
+         tmp_arr1 = MATMUL(eigvect, MATMUL(diag, tmp_arr1)) ! SQRT(A)
 
-         fidelity = (REAL(trace(tmp_arr1)))**2
-      end function fidelity
+         tmp_arr1 = MATMUL(tmp_arr1, MATMUL(B, tmp_arr1)) !SQRT(A)*B*SQRT(A)
+         CALL eigensystem(tmp_arr1, eigval, eigvect)
+         DO i = 1, ss
+            diag(i,i) = DSQRT(REAL(eigval(i), KIND=DP))
+         END DO
+         tmp_arr1 = CONJG(TRANSPOSE(eigvect))
+         tmp_arr1 = MATMUL(eigvect, MATMUL(diag, tmp_arr1)) !SQRT(SQRT(A)*B*SQRT(A))
 
-      subroutine I2S(A, B, C)
+         fidelity = (REAL(trace(tmp_arr1), KIND=DP))**2
+      END FUNCTION fidelity
+
+      FUNCTION fidelity2(A,B)
+         COMPLEX(KIND=DP), DIMENSION(2,2), INTENT(IN) :: A, B
+         REAL   (KIND=DP)                             :: fidelity2
+
+         INTEGER :: i
+
+         diag2 = 0.0_DP
+         ! Compute SQRT(A)
+         CALL eigensystem(A, eigval_2, eigvect_2)
+         DO i = 1, 2
+            diag2(i,i) = DSQRT(REAL(eigval_2(i), KIND=DP))
+         END DO
+         tmp_arr22 = CONJG(TRANSPOSE(eigvect_2))
+         tmp_arr22 = MATMUL(eigvect_2, MATMUL(diag2, tmp_arr22)) ! SQRT(A)
+         tmp_arr22 = MATMUL(tmp_arr22, MATMUL(B, tmp_arr22)) !SQRT(A)*B*SQRT(A)
+         CALL eigensystem(tmp_arr22, eigval_2, eigvect_2)
+         DO i = 1, 2
+            diag2(i,i) = DSQRT(REAL(eigval_2(i), KIND=DP))
+         END DO
+         tmp_arr22 = CONJG(TRANSPOSE(eigvect_2))
+         tmp_arr22 = MATMUL(eigvect_2, MATMUL(diag2, tmp_arr22)) !SQRT(SQRT(A)*B*SQRT(A))
+
+         fidelity2 = (REAL(trace(tmp_arr22), KIND=DP))**2
+      END FUNCTION fidelity2
+
+      SUBROUTINE I2S(A, B, C)
          ! Computes
          !        e^{-iA}Be^{iA}
          ! using singular value decomposition.
 
-         complex(kind=DP), dimension(:,:), intent(in) :: A, B
-         complex(kind=DP), dimension(:,:), intent(out) :: C
-         integer :: i
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(IN)  :: A, B
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(OUT) :: C
+         INTEGER                                       :: i
 
-         diag = 0
+         diag = 0.0_DP
 
-         call eigensystem(A,eigval,eigvect)
+         CALL eigensystem(A,eigval,eigvect)
 
          ! Construct the diagonal matrix of e^{-iA}
-         do i = 1, ss
-          diag(i,i) = cmplx(cos(eigval(i)), sin(-eigval(i)))
-         end do
+         DO i = 1, ss
+            diag(i,i) = CMPLX(DCOS(eigval(i)), DSIN(-eigval(i)))
+         END DO
 
          ! Construct e^{-iA}
-         tmp_i2s1 = conjg(transpose(eigvect))
-         tmp_i2s1 = matmul(eigvect, matmul(diag, tmp_i2s1))
-         tmp_i2s2 = conjg(transpose(tmp_i2s1))
+         tmp_i2s1 = CONJG(TRANSPOSE(eigvect))
+         tmp_i2s1 = MATMUL(eigvect, MATMUL(diag, tmp_i2s1))
+         tmp_i2s2 = CONJG(TRANSPOSE(tmp_i2s1))
 
          ! Construct e^{-iA}Be^{iA}
-         C = matmul(tmp_i2s1, matmul(B, tmp_i2s2))
-      end subroutine I2S
+         C = MATMUL(tmp_i2s1, MATMUL(B, tmp_i2s2))
+      END SUBROUTINE I2S
 
       ! Returns the inverse of a matrix calculated by finding the LU
       ! decomposition.  Depends on LAPACK.
-      subroutine matinv(A, Ainv)
-         complex(kind=DP), dimension(:,:), intent(in) :: A
-         complex(kind=DP), dimension(size(A,1),size(A,2)) :: Ainv
+      SUBROUTINE matinv(A, Ainv)
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(IN)      :: A
+         COMPLEX(KIND=DP), DIMENSION(SIZE(A,1), SIZE(A,2)) :: Ainv
 
-         real(dp), dimension(size(A,1)) :: work  ! work array for LAPACK
-         integer, dimension(size(A,1)) :: ipiv   ! pivot indices
-         integer :: n, info
+         REAL(KIND=DP), DIMENSION(SIZE(A,1)) :: work   ! work array for LAPACK
+         INTEGER,       DIMENSION(SIZE(A,1)) :: ipiv   ! pivot indices
+         INTEGER                             :: n, info
 
          ! External procedures defined in LAPACK
-         external ZGETRF
-         external ZGETRI
+         EXTERNAL ZGETRF
+         EXTERNAL ZGETRI
 
          ! Store A in Ainv to prevent it from being overwritten by LAPACK
          Ainv = A
-         n = size(A,1)
+         n    = SIZE(A,1)
 
-         ! DGETRF computes an LU factorization of a general M-by-N matrix A
+         ! ZGETRF computes an LU factorization of a general M-by-N matrix A
          ! using partial pivoting with row interchanges.
-         call ZGETRF(n, n, Ainv, n, ipiv, info)
+         CALL ZGETRF(n, n, Ainv, n, ipiv, info)
 
-         if (info /= 0) then
+         IF (info /= 0) THEN
             stop 'Matrix is numerically singular!'
-         end if
+         END IF
 
-         ! DGETRI computes the inverse of a matrix using the LU factorization
-         ! computed by DGETRF.
-         call ZGETRI(n, Ainv, n, ipiv, work, n, info)
+         ! ZGETRI computes the inverse of a matrix using the LU factorization
+         ! computed by ZGETRF.
+         CALL ZGETRI(n, Ainv, n, ipiv, work, n, info)
 
-         if (info /= 0) then
+         IF (info /= 0) THEN
             stop 'Matrix inversion failed!'
-         end if
-      end subroutine matinv
+         END IF
+      END SUBROUTINE matinv
 
-      subroutine matinv2(A,B)
-         !! Performs a direct calculation of the inverse of a 2×2 matrix.
-         complex(kind=DP), intent(in) :: A(2,2)   !! Matrix
-         complex(kind=DP)             :: B(2,2)   !! Inverse matrix
-         complex(kind=DP)             :: detinv
+      SUBROUTINE matinv2(A,B)
+         !! Performs a direct calculation of the inverse of a 2x2 matrix.
+         COMPLEX(KIND=DP), INTENT(IN) :: A(2,2)   !! Matrix
+         COMPLEX(KIND=DP)             :: B(2,2)   !! Inverse matrix
+         COMPLEX(KIND=DP)             :: detinv
 
          ! Calculate the inverse determinant of the matrix
          detinv = 1/(A(1,1)*A(2,2) - A(1,2)*A(2,1))
@@ -139,13 +167,13 @@ contains
          B(2,1) = -detinv * A(2,1)
          B(1,2) = -detinv * A(1,2)
          B(2,2) = +detinv * A(1,1)
-      end subroutine matinv2
+      END SUBROUTINE matinv2
 
-      subroutine matinv4(A,B)
+      SUBROUTINE matinv4(A,B)
          !! Performs a direct calculation of the inverse of a 4×4 matrix.
-         complex(kind=DP), intent(in) :: A(4,4)   !! Matrix
-         complex(kind=DP)             :: B(4,4)   !! Inverse matrix
-         complex(kind=DP)             :: detinv
+         COMPLEX(KIND=DP), INTENT(IN) :: A(4,4)   !! Matrix
+         COMPLEX(KIND=DP)             :: B(4,4)   !! Inverse matrix
+         COMPLEX(KIND=DP)             :: detinv
 
          ! Calculate the inverse determinant of the matrix
          detinv = &
@@ -191,70 +219,70 @@ contains
             A(3,4)-A(2,4)*A(3,1))+A(1,4)*(A(2,2)*A(3,1)-A(2,1)*A(3,2)))
          B(4,4) = detinv*(A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2))+A(1,2)*(A(2,3)*&
             A(3,1)-A(2,1)*A(3,3))+A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1)))
-      end subroutine matinv4
+      END SUBROUTINE matinv4
 
       ! Right now, this only works for a four dimensional Hilbert space
       ! that we want to decompose into two two-dimensional Hilbert spaces.
-      subroutine rhoA(A, B)
-         complex(kind=DP), dimension(4,4), intent(in) :: A
-         complex(kind=DP), dimension(2,2), intent(out) :: B
+      SUBROUTINE rhoA(A, B)
+         COMPLEX(KIND=DP), DIMENSION(4,4), INTENT(IN)  :: A
+         COMPLEX(KIND=DP), DIMENSION(2,2), INTENT(OUT) :: B
 
-         B = matmul(transpose(conjg(b1)),matmul(A,b1)) + matmul(transpose(conjg(b2)),matmul(A,b2))
-      end subroutine rhoA
+         B = MATMUL(TRANSPOSE(CONJG(b1)),MATMUL(A,b1)) + MATMUL(TRANSPOSE(CONJG(b2)),MATMUL(A,b2))
+      END SUBROUTINE rhoA
 
-      subroutine rhoB(A, B)
-         complex(kind=DP), dimension(:,:), intent(in) :: A
-         complex(kind=DP), dimension(2,2), intent(out) :: B
+      SUBROUTINE rhoB(A, B)
+         COMPLEX(KIND=DP), DIMENSION(4,4), INTENT(IN)  :: A
+         COMPLEX(KIND=DP), DIMENSION(2,2), INTENT(OUT) :: B
 
-         B = matmul(transpose(conjg(a1)),matmul(A,a1)) + matmul(transpose(conjg(a2)),matmul(A,a2))
-      end subroutine rhoB
+         B = MATMUL(TRANSPOSE(CONJG(a1)),MATMUL(A,a1)) + MATMUL(TRANSPOSE(CONJG(a2)),MATMUL(A,a2))
+      END SUBROUTINE rhoB
 
-      function test_hermitian(A)
-         complex(kind=DP), dimension(:,:), intent(in) :: A
-         logical :: test_hermitian
-         logical :: test
-         integer :: i, j, n
+      FUNCTION test_hermitian(A)
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(IN) :: A
+         LOGICAL                                      :: test_hermitian
+         LOGICAL                                      :: test
+         INTEGER                                      :: i, j, n
 
-         n = size(A, dim=1)
-         test = .true.
-         do i=1,n
-            if (abs(aimag(A(i,i))) > tol) then
-               test = .false.
-            end if
-            do j=i+1,n
-               if(abs(A(i,j)-conjg(A(j,i)))> tol) then
-                  test = .false.
-               end if
-            end do
-         end do
+         n    = SIZE(A, DIM=1)
+         test = .TRUE.
+         DO i = 1, n
+            IF (ABS(AIMAG(A(i,i))) > tol) THEN
+               test = .FALSE.
+            END IF
+            DO j = i+1, n
+               IF (ABS(A(i,j)-CONJG(A(j,i)))> tol) THEN
+                  test = .FALSE.
+               END IF
+            END DO
+         END DO
          test_hermitian = test
-      end function test_hermitian
+      END FUNCTION test_hermitian
 
-      function test_positivity(A)
-         complex(kind=DP), dimension(:,:), intent(in) :: A
-         logical :: test_positivity
-         integer :: i, n
+      FUNCTION test_positivity(A)
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(IN) :: A
+         LOGICAL                                      :: test_positivity
+         INTEGER                                      :: i, n
 
-         n = size(A, dim=1)
-         call eigensystem(A, eigval, eigvect)
-         test_positivity = .true.
+         n = SIZE(A, DIM=1)
+         CALL eigensystem(A, eigval, eigvect)
+         test_positivity = .TRUE.
 
-         do i = 1, n
-            if (eigval(i) < 0.0_DP) test_positivity = .false.
-         end do
-      end function test_positivity
+         DO i = 1, n
+            IF (eigval(i) < 0.0_DP) test_positivity = .FALSE.
+         END DO
+      END FUNCTION test_positivity
 
-      function test_trace(A)
-         complex(kind=DP), dimension(:,:), intent(in) :: A
-         logical :: test_trace
-         real(kind=DP) :: tr
+      FUNCTION test_trace(A)
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(IN) :: A
+         LOGICAL                                      :: test_trace
+         REAL(KIND=DP)                                :: tr
 
-         test_trace = .true.
-         tr = sqrt(trace(A)*conjg(trace(A)))
-         if (abs(tr-1.0_DP) > tol) test_trace = .false.
-      end function test_trace
+         test_trace = .TRUE.
+         tr         = DSQRT(REAL(trace(A)*CONJG(trace(A)), KIND=DP))
+         IF (ABS(tr - 1.0_DP) > tol) test_trace = .FALSE.
+      END FUNCTION test_trace
 
-      function time_stamp()
+      FUNCTION time_stamp()
          !---------------------------------------
          ! this returns current time in a string
          !---------------------------------------
@@ -262,38 +290,58 @@ contains
          character(8)  :: date
          character(10) :: time
 
-         call date_and_time(date,time)
+         CALL DATE_AND_TIME(date,time)
 
          time_stamp = date(5:6) // '/' // date(7:8) // '/' //  date(1:4) &
                               // '  ' // time(1:2) // ':' // time(3:4)
-      end function time_stamp
+      END FUNCTION time_stamp
 
-      function trace(A)
-         complex(kind=DP), dimension(:,:), intent(in) :: A
-         complex(kind=DP) :: trace
-         integer :: n, i
+      FUNCTION trace(A)
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(IN) :: A
+         COMPLEX(KIND=DP)                             :: trace
+         INTEGER                                      :: n, i
 
-         n = size(A, dim=1)
-         trace = 0
-         do i = 1, n
+         n     = SIZE(A, DIM=1)
+         trace = 0.0_DP
+         DO i = 1, n
             trace = trace + A(i,i)
-         end do
-      end function trace
+         END DO
+      END FUNCTION trace
 
-      function trace_distance(A, B)
-         complex(kind=DP), dimension(:,:), intent(in) :: A, B
-         complex(kind=DP) :: trace_distance
+      FUNCTION trace_distance(A, B)
+         COMPLEX(KIND=DP), DIMENSION(:,:), INTENT(IN) :: A, B
+         COMPLEX(KIND=DP)                             :: trace_distance
+         INTEGER                                      :: i
 
-         integer :: i
-         tmp_arr1 = matmul(conjg(transpose(A - B)), A-B)
+         tmp_arr1 = MATMUL(CONJG(TRANSPOSE(A - B)), A - B)
+         diag = 0.0_DP
 
-         call eigensystem(tmp_arr1, eigval, eigvect)
-         do i = 1, ss
-            diag(i,i) = sqrt(REAL(eigval(i), kind=DP))
-         end do
-         tmp_arr1 = conjg(transpose(eigvect))
-         tmp_arr1 = matmul(eigvect, matmul(diag, tmp_arr1))
+         CALL eigensystem(tmp_arr1, eigval, eigvect)
+         DO i = 1, ss
+            diag(i,i) = DSQRT(REAL(eigval(i), KIND=DP))
+         END DO
+         tmp_arr1 = CONJG(TRANSPOSE(eigvect))
+         tmp_arr1 = MATMUL(eigvect, MATMUL(diag, tmp_arr1))
 
-         trace_distance = 0.5 * trace(tmp_arr1)
-      end function trace_distance
-end module helper
+         trace_distance = 0.5_DP * trace(tmp_arr1)
+      END FUNCTION trace_distance
+ 
+      FUNCTION trace_distance2(A, B)
+         COMPLEX(KIND=DP), DIMENSION(2,2), INTENT(IN) :: A, B
+         COMPLEX(KIND=DP)                             :: trace_distance2
+         INTEGER                                      :: i
+
+         tmp_arr22 = MATMUL(CONJG(TRANSPOSE(A - B)), A - B)
+         diag2 = 0.0_DP
+
+         CALL eigensystem(tmp_arr22, eigval_2, eigvect_2)
+         DO i = 1, 2
+            diag2(i,i) = DSQRT(REAL(eigval_2(i), KIND=DP))
+         END DO
+         tmp_arr22 = CONJG(TRANSPOSE(eigvect_2))
+         tmp_arr22 = MATMUL(eigvect_2, MATMUL(diag2, tmp_arr22))
+
+         trace_distance2 = 0.5_DP * trace(tmp_arr22)
+      END FUNCTION trace_distance2
+
+END MODULE helper
